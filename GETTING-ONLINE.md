@@ -327,8 +327,11 @@ into `/var/lib/planesforfriends/backups/`.
 pointing at `https://rent-planes.duckdns.org/healthz` every 5 minutes, alerting your email. That
 turns "down since Tuesday and nobody said anything" into an email within five minutes.
 
-**Make the web address look after itself** (recommended). Sign in at duckdns.org, copy your
-**token** from the top of the page, and run:
+**Make the web address look after itself** (recommended). Sign in at
+[duckdns.org](https://www.duckdns.org) with the same account you used to create the name. The
+**token** sits near the top of that page, just above the list of your domains, on a line reading
+`token: 8f2a1c3d-4b5e-47a9-9c21-6d0e5f8b7a34`. It is a long string of letters, numbers and
+hyphens, the same one for all your domains. Copy it, then run:
 
 ```bash
 cd planesforfriends && sudo bash deploy/duckdns-refresh.sh rent-planes <your-token>
@@ -337,6 +340,10 @@ cd planesforfriends && sudo bash deploy/duckdns-refresh.sh rent-planes <your-tok
 That installs a weekly job that re-tells DuckDNS where the site lives. It costs nothing, and it
 means the name follows the site automatically if the machine is ever rebuilt on a different
 address — as well as settling any question of whether DuckDNS drops names nobody updates.
+
+Treat the token like a password: anyone holding it can point your web address wherever they like.
+The script stores it readable only by root, and there is no reason to paste it anywhere else. If
+you ever click **recreate token** on DuckDNS, run the command again with the new one.
 
 ## Making changes later
 
