@@ -6,9 +6,10 @@
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node --disable-warning=ExperimentalWarning server.js",
     "seed": "node scripts/seed.js",
-    "reset": "node scripts/seed.js --reset"
+    "reset": "node scripts/seed.js --reset",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js"
   },
   "engines": {
     "node": ">=22.5.0"

@@ -7,7 +7,7 @@ const path = require('node:path');
 
 const { handleApi } = require('./src/api');
 const { HttpError } = require('./src/store');
-const { DB_PATH } = require('./src/db');
+const { DB_PATH, close: closeDatabase } = require('./src/db');
 
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -100,6 +100,13 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Platform health check
+    if (pathname === '/healthz') {
+      res.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });
+      res.end('ok');
+      return;
+    }
+
     // Page routes
     if (pathname === '/' || pathname === '/rent') {
       await sendFile(res, path.join(PUBLIC_DIR, 'index.html'));
@@ -146,5 +153,24 @@ server.listen(PORT, HOST, () => {
   console.log(`[planesforfriends] listening on http://localhost:${PORT}`);
   console.log(`[planesforfriends] database: ${DB_PATH}`);
 });
+
+// Hosts stop a container by sending SIGTERM; check the write-ahead log back into
+// the database file before the process goes away.
+let shuttingDown = false;
+for (const signal of ['SIGTERM', 'SIGINT']) {
+  process.on(signal, () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[planesforfriends] ${signal} received, shutting down`);
+    server.close(() => {
+      closeDatabase();
+      process.exit(0);
+    });
+    setTimeout(() => {
+      closeDatabase();
+      process.exit(0);
+    }, 5000).unref();
+  });
+}
 
 module.exports = server;

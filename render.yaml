@@ -1,0 +1,22 @@
+# Render Blueprint. In Render: New → Blueprint → point at this repository.
+# The disk is the important part — without it every reservation is lost on each
+# deploy, because the whole system is one SQLite file.
+services:
+  - type: web
+    name: planesforfriends
+    runtime: node
+    plan: starter # free instances have no disk and sleep; do not use one here
+    buildCommand: '' # no dependencies to install
+    startCommand: node --disable-warning=ExperimentalWarning server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: PFF_DATA_DIR
+        value: /data
+      - key: ADMIN_PASSWORD
+        sync: false # set this yourself in the Render dashboard, once
+    disk:
+      name: planesforfriends-data
+      mountPath: /data
+      sizeGB: 1

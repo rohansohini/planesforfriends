@@ -27,7 +27,9 @@ generated admin password in a box in the terminal, e.g. `hangar-tailwind-284`. W
 it is shown once. Set `ADMIN_PASSWORD` before that first run to choose your own instead, or
 change it later at `/admin` under Settings.
 
-The whole system is one SQLite file. Back it up by copying `data/planesforfriends.db`.
+The whole system is one SQLite file. `npm run backup` takes a safe snapshot while the site is
+running; see **[DEPLOY.md](DEPLOY.md)** for putting it on the internet, which mostly comes down
+to picking a host that has a real disk.
 
 ## Pages
 
@@ -144,4 +146,7 @@ src/auth.js          admin sessions
 public/              index.html, rent.html, lookup.html, admin.html + css/js
 public/js/calendar.js  week calendar shared by the renter pages and the admin console
 scripts/seed.js      starting owners and planes
+scripts/backup.js    snapshot of the live database
+Dockerfile           for Fly.io or any container host
+render.yaml          Render blueprint, disk included
 ```

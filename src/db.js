@@ -197,8 +197,18 @@ function bootstrap() {
 
 bootstrap();
 
+function close() {
+  try {
+    db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    db.close();
+  } catch {
+    /* already closed */
+  }
+}
+
 module.exports = {
   db,
+  close,
   DB_PATH,
   DATA_DIR,
   hashPassword,
