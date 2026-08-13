@@ -28,10 +28,9 @@ it is shown once. Set `ADMIN_PASSWORD` before that first run to choose your own 
 change it later at `/admin` under Settings.
 
 The whole system is one SQLite file. `npm run backup` takes a safe snapshot while the site is
-running; see **[DEPLOY.md](DEPLOY.md)** for putting it on the internet, which mostly comes down
-to picking a host that has a real disk. There are free options that do — on a fresh Ubuntu
-machine, `sudo bash deploy/install.sh yourname.duckdns.org` sets up the whole thing including
-HTTPS.
+running; see **[GETTING-ONLINE.md](GETTING-ONLINE.md)** for a click-by-click walkthrough of putting it
+on the internet for free, or **[DEPLOY.md](DEPLOY.md)** for the reference version. On a fresh
+Ubuntu machine it comes down to `sudo bash deploy/install.sh yourname.duckdns.org`.
 
 ## Pages
 

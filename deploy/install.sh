@@ -30,11 +30,28 @@ if ! command -v node >/dev/null 2>&1 || [ "$(node -p 'process.versions.node.spli
 fi
 node --version
 
-echo "==> Fetching the app"
-if [ -d "$APP_DIR/.git" ]; then
+echo "==> Installing the app files"
+# Prefer the copy this script came from — that works whether it arrived by git
+# clone or as a downloaded ZIP, and needs no GitHub access at all.
+SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -f "$SRC_DIR/server.js" ] && [ "$SRC_DIR" != "$APP_DIR" ]; then
+  echo "    from $SRC_DIR"
+  mkdir -p "$APP_DIR"
+  # Skip data/ and .git — the live database lives in $DATA_DIR, and a stray copy
+  # of somebody's renter list has no business sitting in the app directory.
+  tar -C "$SRC_DIR" --exclude=./data --exclude=./.git -cf - . | tar -C "$APP_DIR" -xf -
+elif [ -d "$APP_DIR/.git" ]; then
+  echo "    updating the existing checkout"
   git -C "$APP_DIR" pull --ff-only
-else
+elif [ ! -f "$APP_DIR/server.js" ]; then
+  echo "    cloning $REPO"
   git clone --depth 1 "$REPO" "$APP_DIR"
+fi
+
+if [ ! -f "$APP_DIR/server.js" ]; then
+  echo "Could not find the app files in $APP_DIR." >&2
+  echo "Run this script from inside the downloaded project folder." >&2
+  exit 1
 fi
 
 echo "==> Creating the service user and data directory"
@@ -53,7 +70,30 @@ cat > /etc/cron.d/planesforfriends-backup <<CRON
 15 3 * * * pff cd $APP_DIR && PFF_DATA_DIR=$DATA_DIR /usr/bin/node scripts/backup.js >/dev/null 2>&1
 CRON
 
+open_web_ports() {
+  # Oracle's Ubuntu images ship an iptables rule that rejects everything except
+  # SSH. It is the single most common reason a new site is unreachable, so open
+  # 80 and 443 here rather than leaving it as a puzzle.
+  if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
+    ufw allow 80/tcp >/dev/null 2>&1 || true
+    ufw allow 443/tcp >/dev/null 2>&1 || true
+  fi
+  if command -v iptables >/dev/null 2>&1; then
+    for port in 80 443; do
+      iptables -C INPUT -p tcp --dport "$port" -j ACCEPT 2>/dev/null ||
+        iptables -I INPUT 1 -p tcp --dport "$port" -j ACCEPT 2>/dev/null || true
+    done
+    if command -v netfilter-persistent >/dev/null 2>&1; then
+      netfilter-persistent save >/dev/null 2>&1 || true
+    elif [ -d /etc/iptables ]; then
+      iptables-save > /etc/iptables/rules.v4 2>/dev/null || true
+    fi
+  fi
+}
+
 if [ -n "$DOMAIN" ]; then
+  echo "==> Opening ports 80 and 443 on the machine"
+  open_web_ports
   echo "==> Setting up HTTPS for $DOMAIN with Caddy"
   if ! command -v caddy >/dev/null 2>&1; then
     apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https

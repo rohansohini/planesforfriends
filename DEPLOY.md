@@ -1,5 +1,8 @@
 # Putting Planes for Friends on the internet
 
+**Never done this before?** [GETTING-ONLINE.md](GETTING-ONLINE.md) is the click-by-click
+version — this page is the reference.
+
 ## The one thing that matters
 
 Every reservation, plane, owner and tach reading lives in **one SQLite file** on disk
@@ -32,8 +35,13 @@ idle for days. Keep backups off the box either way and neither catch is fatal.
 **Then, on the machine:**
 
 ```bash
-sudo bash deploy/install.sh planesforfriends.duckdns.org
+sudo apt-get install -y git && git clone https://github.com/rohansohini/planesforfriends
+sudo bash planesforfriends/deploy/install.sh planesforfriends.duckdns.org
 ```
+
+The repository is private as it stands, so either make it public first or download the ZIP from
+GitHub and upload it to the machine — the installer runs from whatever folder it sits in and
+does not need GitHub access of its own.
 
 That script installs Node 22, creates a service user, sets up systemd so the site restarts on
 reboot, schedules a nightly backup, installs Caddy for HTTPS, and prints your admin password at
