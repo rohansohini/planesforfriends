@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confirmation &amp; tach time · Planes for Friends</title>
+<link rel="stylesheet" href="/css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='19' font-size='20'>✈️</text></svg>">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21l20-9L2 3v7l14 2-14 2z"/></svg>
+      <span id="site-title">Planes for Friends</span>
+    </a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/lookup">Confirmation &amp; tach time</a>
+      <a href="/admin">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="narrow">
+    <div class="card">
+      <h1>Look up your reservation</h1>
+      <p class="muted">Enter the confirmation ID you got when you booked, e.g. <span class="mono">PFF-7K3QD2</span>.</p>
+      <form id="lookup-form" class="row" novalidate>
+        <div class="grow">
+          <label for="conf-input">Confirmation ID</label>
+          <input id="conf-input" class="mono" placeholder="PFF-XXXXXX" autocomplete="off" autocapitalize="characters" required>
+        </div>
+        <button type="submit" id="lookup-btn">Find it</button>
+      </form>
+      <div id="msg" class="hidden" style="margin-top:0.9rem"></div>
+    </div>
+
+    <section id="result" class="hidden">
+      <div class="card">
+        <div class="card-head">
+          <h2 id="result-title">Your reservation</h2>
+          <span id="result-status" class="badge badge-good">Confirmed</span>
+        </div>
+        <dl id="result-details"></dl>
+      </div>
+
+      <div class="card">
+        <h2>Reminders</h2>
+        <ol class="instructions" id="result-instructions"></ol>
+      </div>
+
+      <div class="card">
+        <h2>Log your tach time</h2>
+        <p class="muted" id="tach-help">
+          Enter the tach time for this flight. You can update it later if you need to.
+        </p>
+        <form id="tach-form" class="row" novalidate>
+          <div class="grow">
+            <label for="tach-input">Tach time</label>
+            <input id="tach-input" type="number" step="0.1" min="0" inputmode="decimal" placeholder="e.g. 3.4" required>
+          </div>
+          <button type="submit" id="tach-btn">Save tach time</button>
+        </form>
+        <div id="tach-msg" class="hidden" style="margin-top:0.9rem"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">Planes for Friends · fly safe, top off the gas.</div>
+</footer>
+
+<script src="/js/common.js"></script>
+<script src="/js/lookup.js"></script>
+</body>
+</html>

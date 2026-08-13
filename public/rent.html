@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rent a plane · Planes for Friends</title>
+<link rel="stylesheet" href="/css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='19' font-size='20'>✈️</text></svg>">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21l20-9L2 3v7l14 2-14 2z"/></svg>
+      <span id="site-title">Planes for Friends</span>
+    </a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/lookup">Confirmation &amp; tach time</a>
+      <a href="/admin">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div id="msg" class="hidden"></div>
+
+    <!-- booking flow -->
+    <section id="booking">
+      <div class="card">
+        <h1 id="owner-heading">Loading…</h1>
+        <p class="muted" id="owner-sub"></p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>1. Pick a plane</h2>
+          <span class="tiny muted" id="plane-count"></span>
+        </div>
+        <div id="plane-picker" class="plane-picker" role="group" aria-label="Choose a plane"></div>
+        <p class="tiny muted" id="plane-notes" style="margin-top:0.75rem"></p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>2. Pick a time</h2>
+          <span class="tiny muted">Striped, greyed-out time is already taken.</span>
+        </div>
+        <div id="calendar"></div>
+
+        <div class="card" style="margin:1rem 0 0; background:var(--bg); box-shadow:none">
+          <div id="selection-summary" class="muted">Tap a start time, then tap an end time on the calendar.</div>
+          <div class="field-row" style="margin-top:0.75rem">
+            <div>
+              <label for="start-input">Start</label>
+              <input type="datetime-local" id="start-input" step="900">
+            </div>
+            <div>
+              <label for="end-input">End</label>
+              <input type="datetime-local" id="end-input" step="900">
+            </div>
+          </div>
+          <button type="button" class="secondary small" id="clear-selection">Clear selection</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>3. Your details</h2>
+        <form id="book-form" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="renter-name">Your name</label>
+              <input id="renter-name" name="name" autocomplete="name" required>
+            </div>
+            <div class="field">
+              <label for="renter-phone">Phone number</label>
+              <input id="renter-phone" name="phone" type="tel" autocomplete="tel" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="renter-email">Email</label>
+            <input id="renter-email" name="email" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="renter-notes">Anything the owner should know? (optional)</label>
+            <textarea id="renter-notes" name="notes" placeholder="Where you're headed, who's flying with you…"></textarea>
+          </div>
+          <div id="form-msg" class="hidden"></div>
+          <button type="submit" id="submit-btn" class="btn-block">Reserve this plane</button>
+          <p class="tiny muted center" style="margin:0.75rem 0 0">
+            Your name and number are only visible to the owners — other renters just see the time as booked.
+          </p>
+        </form>
+      </div>
+    </section>
+
+    <!-- confirmation -->
+    <section id="confirmation" class="hidden">
+      <div class="card">
+        <h1>You're booked ✈️</h1>
+        <p class="muted">Write this confirmation ID down — you'll need it to log your tach time afterwards.</p>
+        <div class="conf-code" id="conf-code"></div>
+        <dl id="conf-details" style="margin:1.25rem 0 0"></dl>
+      </div>
+
+      <div class="card">
+        <h2>Before you fly</h2>
+        <ol class="instructions" id="conf-instructions"></ol>
+      </div>
+
+      <div class="card">
+        <h2>After you fly</h2>
+        <p class="muted">Come back and log your tach time with your confirmation ID.</p>
+        <div class="row">
+          <a class="btn" id="conf-lookup-link" href="/lookup">Log tach time</a>
+          <button type="button" class="secondary" id="book-another">Book another flight</button>
+          <button type="button" class="secondary" id="print-conf">Print / save</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">Planes for Friends · fly safe, top off the gas.</div>
+</footer>
+
+<script src="/js/common.js"></script>
+<script src="/js/calendar.js"></script>
+<script src="/js/rent.js"></script>
+</body>
+</html>

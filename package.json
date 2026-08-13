@@ -1,0 +1,16 @@
+{
+  "name": "planesforfriends",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Recreational plane rental scheduling for Vinod, Soney, and friends.",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node scripts/seed.js",
+    "reset": "node scripts/seed.js --reset"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}

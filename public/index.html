@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planes for Friends</title>
+<meta name="description" content="Rent a plane from Vinod, Soney and friends. No account needed.">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='19' font-size='20'>✈️</text></svg>">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21l20-9L2 3v7l14 2-14 2z"/></svg>
+      <span id="site-title">Planes for Friends</span>
+    </a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/lookup">Confirmation &amp; tach time</a>
+      <a href="/admin">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="card">
+      <h1>Rent a plane from a friend</h1>
+      <p class="muted">
+        Pick whose plane you want to fly, choose an open time on the calendar, and leave your name and
+        number. No account, no password — you just get a confirmation ID to hang onto.
+      </p>
+    </div>
+
+    <div id="msg" class="hidden"></div>
+
+    <h2>Whose plane are you flying?</h2>
+    <div id="owners" class="plane-picker" aria-live="polite">
+      <p class="muted">Loading…</p>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem">
+      <h2>Already flew?</h2>
+      <p class="muted">Enter your confirmation ID to see your reservation and log your tach time.</p>
+      <a class="btn" href="/lookup">Look up a reservation</a>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">Planes for Friends · fly safe, top off the gas.</div>
+</footer>
+
+<script src="/js/common.js"></script>
+<script>
+(async function () {
+  const list = $('#owners');
+  try {
+    const [config, owners] = await Promise.all([api('/api/config'), api('/api/owners')]);
+    if (config.siteTitle) {
+      document.title = config.siteTitle;
+      $('#site-title').textContent = config.siteTitle;
+    }
+    list.replaceChildren();
+    if (!owners.length) {
+      list.append(el('p', { class: 'muted' }, 'No planes are listed yet. Check back soon.'));
+      return;
+    }
+    for (const owner of owners) {
+      list.append(
+        el(
+          'a',
+          { class: 'plane-option', href: `/rent/${owner.slug}` },
+          el('div', { class: 'tail' }, owner.name),
+          el(
+            'div',
+            { class: 'meta' },
+            `${owner.planeCount} plane${owner.planeCount === 1 ? '' : 's'} available`
+          )
+        )
+      );
+    }
+  } catch (err) {
+    list.replaceChildren();
+    showMessage($('#msg'), err.message);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · Planes for Friends</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='19' font-size='20'>✈️</text></svg>">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21l20-9L2 3v7l14 2-14 2z"/></svg>
+      <span id="site-title">Planes for Friends</span>
+    </a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/lookup">Confirmation &amp; tach time</a>
+      <a href="/admin">Admin</a>
+      <a href="#" id="logout-link" class="hidden">Sign out</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- login -->
+  <section id="login" class="narrow hidden">
+    <div class="card">
+      <h1>Admin sign in</h1>
+      <p class="muted">One shared password for the owners.</p>
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" required>
+        </div>
+        <div id="login-msg" class="hidden"></div>
+        <button type="submit" class="btn-block">Sign in</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- console -->
+  <section id="console" class="wrap hidden">
+    <div class="card-head">
+      <h1>Admin</h1>
+      <span class="tiny muted" id="summary-line"></span>
+    </div>
+
+    <div id="msg" class="hidden"></div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="schedule" aria-selected="true">Schedule</button>
+      <button class="tab" role="tab" data-tab="planes" aria-selected="false">Planes</button>
+      <button class="tab" role="tab" data-tab="owners" aria-selected="false">Owners</button>
+      <button class="tab" role="tab" data-tab="settings" aria-selected="false">Settings</button>
+    </div>
+
+    <!-- schedule -->
+    <div class="tab-panel" data-panel="schedule">
+      <div class="card">
+        <div class="card-head">
+          <h2>Reservations</h2>
+          <div class="row">
+            <button type="button" class="secondary small" id="add-block-btn">Block off time</button>
+            <button type="button" class="small" id="add-res-btn">Add reservation</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grow">
+            <label for="filter-plane">Plane</label>
+            <select id="filter-plane"></select>
+          </div>
+          <div>
+            <label for="filter-from">From</label>
+            <input type="date" id="filter-from">
+          </div>
+          <div>
+            <label for="filter-to">To</label>
+            <input type="date" id="filter-to">
+          </div>
+          <button type="button" class="secondary" id="filter-apply">Apply</button>
+          <button type="button" class="secondary" id="filter-reset">Reset</button>
+          <a class="btn" id="export-link" href="#" download>Download spreadsheet (CSV)</a>
+        </div>
+        <p class="tiny muted" style="margin:0.6rem 0 0" id="filter-hint"></p>
+      </div>
+
+      <div class="card">
+        <div class="table-scroll">
+          <table id="res-table">
+            <thead>
+              <tr>
+                <th>Confirmation</th>
+                <th>Plane</th>
+                <th>When</th>
+                <th>Renter</th>
+                <th>Contact</th>
+                <th>Tach</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="res-body"></tbody>
+          </table>
+        </div>
+        <p id="res-empty" class="muted center hidden" style="padding:1.5rem 0">Nothing booked in this window.</p>
+      </div>
+    </div>
+
+    <!-- planes -->
+    <div class="tab-panel hidden" data-panel="planes">
+      <div class="card">
+        <h2>Add a plane</h2>
+        <form id="plane-form" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="plane-owner">Owner</label>
+              <select id="plane-owner" required></select>
+            </div>
+            <div class="field">
+              <label for="plane-tail">Tail number</label>
+              <input id="plane-tail" placeholder="N1234A" required>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="plane-model">Model</label>
+              <input id="plane-model" placeholder="Cessna 172S Skyhawk">
+            </div>
+            <div class="field">
+              <label for="plane-nickname">Nickname (optional)</label>
+              <input id="plane-nickname" placeholder="The blue one">
+            </div>
+          </div>
+          <div class="field">
+            <label for="plane-notes">Notes shown to renters (optional)</label>
+            <textarea id="plane-notes" placeholder="Hangar B, key in the lockbox…"></textarea>
+          </div>
+          <div id="plane-msg" class="hidden"></div>
+          <button type="submit">Add plane</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>All planes</h2>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Tail</th><th>Owner</th><th>Model</th><th>Nickname</th><th>Notes</th><th>Listed</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="planes-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- owners -->
+    <div class="tab-panel hidden" data-panel="owners">
+      <div class="card">
+        <h2>Add someone to rent from</h2>
+        <p class="muted tiny">This creates their page at <span class="mono">/rent/&lt;name&gt;</span> right away.</p>
+        <form id="owner-form" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="owner-name">Name</label>
+              <input id="owner-name" placeholder="Vinod" required>
+            </div>
+            <div class="field">
+              <label for="owner-phone">Phone (shown to renters for pricing)</label>
+              <input id="owner-phone" type="tel" placeholder="(555) 010-0001">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="owner-email">Email (owners only)</label>
+              <input id="owner-email" type="email" placeholder="vinod@example.com">
+            </div>
+            <div class="field">
+              <label for="owner-slug">Page address (optional)</label>
+              <input id="owner-slug" placeholder="vinod">
+            </div>
+          </div>
+          <div id="owner-msg" class="hidden"></div>
+          <button type="submit">Add owner</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Owners</h2>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Page</th><th>Phone</th><th>Email</th><th>Planes</th><th>Listed</th><th></th></tr>
+            </thead>
+            <tbody id="owners-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- settings -->
+    <div class="tab-panel hidden" data-panel="settings">
+      <div class="card">
+        <h2>Site settings</h2>
+        <form id="settings-form" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="set-site-title">Site title</label>
+              <input id="set-site-title">
+            </div>
+            <div class="field">
+              <label for="set-tz">Time zone (used for spreadsheet exports)</label>
+              <input id="set-tz" placeholder="America/Chicago">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="set-ops-name">Problems contact — name</label>
+              <input id="set-ops-name">
+            </div>
+            <div class="field">
+              <label for="set-ops-phone">Problems contact — phone</label>
+              <input id="set-ops-phone">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="set-open">Calendar starts at (hour, 0–23)</label>
+              <input id="set-open" type="number" min="0" max="23">
+            </div>
+            <div class="field">
+              <label for="set-close">Calendar ends at (hour, 1–24)</label>
+              <input id="set-close" type="number" min="1" max="24">
+            </div>
+            <div class="field">
+              <label for="set-ahead">Renters can book this many days ahead</label>
+              <input id="set-ahead" type="number" min="1" max="730">
+            </div>
+          </div>
+          <div id="settings-msg" class="hidden"></div>
+          <button type="submit">Save settings</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Change admin password</h2>
+        <form id="password-form" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="cur-password">Current password</label>
+              <input id="cur-password" type="password" autocomplete="current-password" required>
+            </div>
+            <div class="field">
+              <label for="new-password">New password</label>
+              <input id="new-password" type="password" autocomplete="new-password" required>
+            </div>
+          </div>
+          <div id="password-msg" class="hidden"></div>
+          <button type="submit">Change password</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="modal-root"></div>
+
+<footer class="site-footer">
+  <div class="wrap">Planes for Friends · admin</div>
+</footer>
+
+<script src="/js/common.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>
