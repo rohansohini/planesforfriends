@@ -3,7 +3,7 @@
 # Works on any free always-free VM (Oracle Cloud, Google Cloud e2-micro) or a
 # Raspberry Pi at home.
 #
-#   sudo bash deploy/install.sh planesforfriends.duckdns.org
+#   sudo bash deploy/install.sh rent-planes.duckdns.org
 #   sudo bash deploy/install.sh                 # no domain yet: HTTP on port 3000 only
 #
 # Safe to re-run: it updates the code and restarts, leaving the database alone.

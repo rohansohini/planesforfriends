@@ -43,7 +43,7 @@ CPU-burning "keep busy" daemon — it works and it is a waste of a machine.
 
 ```bash
 sudo apt-get install -y git && git clone https://github.com/rohansohini/planesforfriends
-sudo bash planesforfriends/deploy/install.sh planesforfriends.duckdns.org
+sudo bash planesforfriends/deploy/install.sh rent-planes.duckdns.org
 ```
 
 The repository is private as it stands, so either make it public first or download the ZIP from

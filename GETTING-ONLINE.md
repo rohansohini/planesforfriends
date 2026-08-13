@@ -114,10 +114,11 @@ address** on the page — something like `152.70.113.8`. **Copy it.** You need i
 Your site needs a name. [duckdns.org](https://www.duckdns.org) gives one away.
 
 1. Sign in with Google or GitHub.
-2. Type a name — `vinod-planes`, say — and click **add domain**.
+2. Type `rent-planes` and click **add domain**. (If somebody already took it, DuckDNS will
+   say so — add a suffix like `rent-planes-mn` and use that everywhere below instead.)
 3. In the box next to it, paste the Public IP from step 2, and click **update ip**.
 
-You now own `vinod-planes.duckdns.org`. It is not pretty. It works exactly like a real address,
+You now own `rent-planes.duckdns.org`. It is not pretty. It works exactly like a real address,
 and you can switch to a real one later.
 
 ## 4. Open the machine's front door (~3 min)
@@ -141,13 +142,13 @@ site stays unreachable, so it is handled.)
 On your instance page, click the **SSH** button — Oracle calls it *Cloud Shell* or *Launch
 Cloud Shell*. A black text window opens in your browser. That is the machine.
 
-Copy these three lines, paste them in, and press Enter. **Change `vinod-planes` to your own
-name from step 3.**
+Copy these three lines, paste them in, and press Enter. **If DuckDNS made you pick a different
+name in step 3, use that one instead.**
 
 ```bash
 sudo apt-get update -qq && sudo apt-get install -y -qq git
 git clone https://github.com/rohansohini/planesforfriends
-sudo bash planesforfriends/deploy/install.sh vinod-planes.duckdns.org
+sudo bash planesforfriends/deploy/install.sh rent-planes.duckdns.org
 ```
 
 <details>
@@ -159,7 +160,7 @@ use its **Upload** button (in the Cloud Shell menu) to send that ZIP to the mach
 ```bash
 sudo apt-get update -qq && sudo apt-get install -y -qq unzip
 unzip -q planesforfriends-*.zip
-sudo bash planesforfriends-*/deploy/install.sh vinod-planes.duckdns.org
+sudo bash planesforfriends-*/deploy/install.sh rent-planes.duckdns.org
 ```
 
 The installer works from those files directly — it does not need GitHub at all.
@@ -169,7 +170,7 @@ It runs for two or three minutes, printing lines you can ignore. At the end it p
 
 ```
 ======================================================================
- Planes for Friends is running at: https://vinod-planes.duckdns.org
+ Planes for Friends is running at: https://rent-planes.duckdns.org
 
  Admin password (shown once, at first start):
        throttle-rudder-348
@@ -180,7 +181,7 @@ It runs for two or three minutes, printing lines you can ignore. At the end it p
 
 ## 6. Check it (~2 min)
 
-Open `https://vinod-planes.duckdns.org` on your phone. You should see the blue header and
+Open `https://rent-planes.duckdns.org` on your phone. You should see the blue header and
 "Rent a plane from a friend", with a padlock in the address bar.
 
 If it does not load, give it 60 seconds — the certificate takes a moment the first time — then
@@ -213,7 +214,7 @@ see *If something goes wrong* below.
 
 **The page never loads.** Almost always the firewall. Check that the ingress rule in step 4 has
 port range `80,443` and source `0.0.0.0/0`. Then, in the terminal, run
-`sudo bash planesforfriends/deploy/install.sh vinod-planes.duckdns.org` again — it is safe to
+`sudo bash planesforfriends/deploy/install.sh rent-planes.duckdns.org` again — it is safe to
 re-run and it re-opens the inner gate.
 
 **"Not secure" or a certificate warning.** The name in DuckDNS is not pointing at this machine.
@@ -239,7 +240,7 @@ fine and the problem is outside it.
 alone:
 
 ```bash
-cd planesforfriends && git pull && sudo bash deploy/install.sh vinod-planes.duckdns.org
+cd planesforfriends && git pull && sudo bash deploy/install.sh rent-planes.duckdns.org
 ```
 
 (If you kept the repository private, download a fresh ZIP and re-run the ZIP commands instead.)

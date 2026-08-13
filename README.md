@@ -30,7 +30,7 @@ change it later at `/admin` under Settings.
 The whole system is one SQLite file. `npm run backup` takes a safe snapshot while the site is
 running; see **[GETTING-ONLINE.md](GETTING-ONLINE.md)** for a click-by-click walkthrough of putting it
 on the internet for free, or **[DEPLOY.md](DEPLOY.md)** for the reference version. On a fresh
-Ubuntu machine it comes down to `sudo bash deploy/install.sh yourname.duckdns.org`.
+Ubuntu machine it comes down to `sudo bash deploy/install.sh rent-planes.duckdns.org`.
 
 ## Pages
 
