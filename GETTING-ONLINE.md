@@ -82,16 +82,33 @@ emails you at 100%. Nothing in this guide will ever trigger it — that is the p
 fire, something got created that is not free and you will know the same day instead of at the
 end of the month.
 
-**What could actually cost money**, if you upgrade to Pay As You Go later: not your renters. The
-free allowance is **4 ARM CPUs and 24 GB of memory** across your machines, 200 GB of disk and
-**10 TB of outbound traffic a month**. This site is about 51 KB per visit, so 10 TB is roughly
-210 million page views — you will use a rounding error of it. Ten years of bookings at 20 a week
-comes to about 38 MB of database against a 200 GB allowance.
+**What could actually cost money** — this matters most if you upgrade to Pay As You Go, which is
+worth doing for capacity and to avoid reclamation. Not your renters, either way. The free
+allowance is **4 ARM CPUs and 24 GB of memory** across your machines, 200 GB of disk and **10 TB
+of outbound traffic a month**. This site is about 51 KB per visit, so 10 TB is roughly 210
+million page views — you will use a rounding error of it. Ten years of bookings at 20 a week
+comes to about 38 MB of database against a 200 GB allowance. Oracle does not meter public IP
+addresses the way AWS and Google now do, so there is no drip charge for being reachable.
 
-The way people get charged is by *creating* something outside the free set: a machine on a shape
-without the **Always Free eligible** label, more than 4 OCPUs or 24 GB of A1 in total, an
-oversized disk, a load balancer. So make the one machine in step 2, and then leave the console
-alone.
+Upgrading does not start a meter. It removes the fence: an Always Free account mostly *cannot*
+create billable things, and a Pay As You Go account happily will. Nothing on this list is
+something you need, so simply do not click them:
+
+- a second machine, or a shape without the **Always Free eligible** label
+- more than 4 OCPUs or 24 GB of A1 across all your instances (you are using 1 and 6)
+- a bigger boot volume, or more than 200 GB of storage in total
+- **a boot volume backup policy** — the tempting one. Always Free covers 5 volume backups and a
+  policy will cheerfully make more. You do not need it: the site already backs its own database
+  up nightly, and that file is the only thing worth saving.
+- a load balancer, a second Autonomous Database, anything with "Enterprise" in the name
+
+If you upgraded from a 30-day trial, also check **Compute → Instances** and **Storage → Block
+Volumes** for anything you made while trying things out. Trial resources that are not Always
+Free eligible stop being free the moment you upgrade. Delete what you do not recognise.
+
+**Then verify rather than trust**: a week in, open **Billing & Cost Management → Cost Analysis**.
+It should read $0.00, and your first invoice should too. Along with the $1 budget alert above,
+that is two independent ways of finding out the same day if something is wrong.
 
 ## 2. Create the machine (~5 min)
 
