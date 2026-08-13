@@ -124,6 +124,12 @@ Change three things and leave everything else alone:
   already far more than this site needs.)
 - **Image**: **Ubuntu** 22.04 or 24.04. The console only offers images that fit the shape, so
   you will automatically get the ARM build.
+- **Public IP address**: under Networking, make sure a public IPv4 address is assigned, and
+  choose **Reserved** rather than Ephemeral. Both are free. A reserved address belongs to your
+  account instead of to this particular machine, which means that if you ever rebuild the
+  machine — or Oracle reclaims it — you can move the same address to the replacement, and your
+  web address and its certificate keep working untouched. An ephemeral one disappears with the
+  instance and you would have to update DuckDNS and wait for a new certificate.
 
 Under **Add SSH keys**, choose **Save private key** and download the file. You may never need it
 (the browser terminal in step 5 does not), but losing it locks you out later.
@@ -149,6 +155,17 @@ address** on the page — something like `152.70.113.8`. **Copy it.** You need i
 >    where free accounts are refused, and it also takes you out of the idle-reclamation pool.
 >    Always Free resources stay free after upgrading — see step 1 for what that does and does not
 >    mean for your card.
+
+> **"The instance requires a public IP address to connect to it from the internet."**
+>
+> This means the machine was created without one. Add it: **Instance → Attached VNICs →** click
+> the primary VNIC **→ IPv4 Addresses →** the three dots beside the private IP **→ Edit →**
+> under Public IP Type choose **Reserved public IP**, give it any name, and save. The address
+> then appears on the instance page.
+>
+> If the console will not let you assign one at all, the machine landed in a *private* subnet,
+> which cannot be reached from the internet. That one is not fixable in place — terminate the
+> instance and create it again, choosing a **public subnet** under Networking.
 
 ## 3. Get a free web address (~5 min)
 
