@@ -294,14 +294,45 @@ fine and the problem is outside it.
 
 # Later
 
-**Updating the site** — same command, any time. It updates the code and leaves every reservation
-alone:
+## Making changes later
+
+The site's code and the site's data live in two different folders, on purpose:
+
+| | Where | What happens on an update |
+| --- | --- | --- |
+| The code | `/opt/planesforfriends` | replaced with the new version |
+| Your data | `/var/lib/planesforfriends` | **never touched** |
+
+Reservations, tach readings, owners, planes, the phone numbers you set, and your admin password
+are all in the data folder. Updating the code cannot delete them, and the update takes a backup
+first regardless.
+
+So when a change is ready, open the Cloud Shell and run:
 
 ```bash
-cd planesforfriends && git pull && sudo bash deploy/install.sh rent-planes.duckdns.org
+cd planesforfriends && bash deploy/update.sh
 ```
 
-(If you kept the repository private, download a fresh ZIP and re-run the ZIP commands instead.)
+That backs up the database, fetches the new code, reinstalls, restarts, and checks the site
+answers. About 30 seconds, of which the site is down for two or three. It reuses your existing
+web address automatically — there is nothing to remember or retype.
+
+(If you kept the repository private, download a fresh ZIP, unzip it, and run
+`sudo bash planesforfriends-*/deploy/install.sh rent-planes.duckdns.org` instead.)
+
+**When the change adds something new to store** — a new field on a reservation, say — the site
+adds it to your database by itself on the next start, alongside the rows already there. Nothing
+is rewritten and nothing is dropped. If a change ever needed something more drastic than that, it
+would be said plainly up front rather than buried in an update.
+
+**If an update goes wrong**, the site is unchanged from before the pull until you restart, and
+you have a backup from 30 seconds earlier either way. To go back to the previous version:
+
+```bash
+cd planesforfriends && git log --oneline -5      # find the version before
+git checkout <the id from that list>
+bash deploy/update.sh
+```
 
 **Your data** is one file at `/var/lib/planesforfriends/planesforfriends.db`, and a copy is made
 every night at 3:15am into `/var/lib/planesforfriends/backups/`. Those copies are on the same

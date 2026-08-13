@@ -200,11 +200,16 @@ To restore, stop the site, copy a backup over `planesforfriends.db` (delete any 
 
 ## Updating the site later
 
-Render and Fly redeploy on push. On a VPS:
+Render and Fly redeploy on push. On a VPS, from your checkout:
 
 ```bash
-cd /opt/planesforfriends && git pull && systemctl restart planesforfriends
+cd ~/planesforfriends && bash deploy/update.sh
 ```
+
+That backs up the database, pulls, reinstalls, restarts, reuses the hostname already in the
+Caddyfile, and fails loudly if the site does not come back. Code lives in `/opt/planesforfriends`
+and data in `/var/lib/planesforfriends`; the installer only ever creates and chowns the latter,
+so an update cannot touch a reservation.
 
 The database migrates itself on start — new columns are added in place, and existing data is left
 alone. Take a backup before updating anyway; it costs a second.

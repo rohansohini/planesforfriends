@@ -148,6 +148,7 @@ public/              index.html, rent.html, lookup.html, admin.html + css/js
 public/js/calendar.js  week calendar shared by the renter pages and the admin console
 scripts/seed.js      starting owners and planes
 scripts/backup.js    snapshot of the live database
+deploy/update.sh     back up, pull, reinstall, restart, verify
 Dockerfile           for Fly.io or any container host
 render.yaml          Render blueprint, disk included
 ```
