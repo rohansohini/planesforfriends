@@ -341,6 +341,18 @@ That installs a weekly job that re-tells DuckDNS where the site lives. It costs 
 means the name follows the site automatically if the machine is ever rebuilt on a different
 address — as well as settling any question of whether DuckDNS drops names nobody updates.
 
+What it actually sets up: a small program at `/usr/local/bin/planesforfriends-duckdns` that makes
+one web request to DuckDNS saying "this name still lives at this address", and a weekly cron entry
+that runs it. It touches nothing else — not the site, not your data, not the certificate. The site
+works fine without it; this is insurance, not plumbing.
+
+See it working with `journalctl -t planesforfriends-duckdns`. To remove it entirely:
+
+```bash
+sudo rm -f /etc/cron.d/planesforfriends-duckdns /usr/local/bin/planesforfriends-duckdns \
+           /etc/planesforfriends-duckdns.conf
+```
+
 Treat the token like a password: anyone holding it can point your web address wherever they like.
 The script stores it readable only by root, and there is no reason to paste it anywhere else. If
 you ever click **recreate token** on DuckDNS, run the command again with the new one.
