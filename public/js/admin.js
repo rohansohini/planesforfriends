@@ -6,7 +6,7 @@
     planes: [],
     settings: null,
     reservations: [],
-    filters: { planeId: '', from: null, to: null },
+    filters: { planeId: '', from: null, to: null, paid: '' },
   };
 
   const msg = $('#msg');
@@ -123,6 +123,7 @@
     state.filters.planeId = $('#filter-plane').value;
     state.filters.from = fromDateInput($('#filter-from').value);
     state.filters.to = fromDateInput($('#filter-to').value, true);
+    state.filters.paid = $('#filter-paid').value;
   }
 
   function filterQuery() {
@@ -130,6 +131,7 @@
     if (state.filters.planeId) params.set('planeId', state.filters.planeId);
     if (state.filters.from != null) params.set('from', String(state.filters.from));
     if (state.filters.to != null) params.set('to', String(state.filters.to));
+    if (state.filters.paid !== '') params.set('paid', state.filters.paid);
     return params;
   }
 
@@ -140,16 +142,27 @@
       state.reservations = await api(`/api/admin/reservations?${params}`);
       renderReservations();
       $('#export-link').href = `/api/admin/export.csv?${params}`;
-      const plane = state.planes.find((p) => String(p.id) === String(state.filters.planeId));
-      const scope = plane ? `${plane.tailNumber} (${plane.ownerName})` : 'all planes';
-      $('#filter-hint').textContent =
-        `Showing ${state.reservations.length} record${state.reservations.length === 1 ? '' : 's'} for ${scope}. ` +
-        'The CSV download uses these same filters.';
+      updateFilterHint();
     } catch (err) {
       showMessage(msg, err.message);
     }
   }
 
+  function updateFilterHint() {
+    const plane = state.planes.find((p) => String(p.id) === String(state.filters.planeId));
+    const scope = plane ? `${plane.tailNumber} (${plane.ownerName})` : 'all planes';
+    const rentals = state.reservations.filter((r) => r.kind === 'rental' && r.status === 'confirmed');
+    const unpaid = rentals.filter((r) => !r.paid).length;
+    const hours = rentals.reduce((sum, r) => sum + (r.tachTime || 0), 0);
+    $('#filter-hint').textContent =
+      `Showing ${state.reservations.length} record${state.reservations.length === 1 ? '' : 's'} for ${scope} · ` +
+      `${unpaid} unpaid · ${hours.toFixed(1)} tach hours logged. The CSV download uses these same filters.`;
+  }
+
+  $('#filter-paid').addEventListener('change', () => {
+    readFilters();
+    loadReservations();
+  });
   $('#filter-apply').addEventListener('click', () => {
     readFilters();
     loadReservations();
@@ -161,6 +174,7 @@
   $('#filter-reset').addEventListener('click', () => {
     const today = startOfDay(Date.now());
     $('#filter-plane').value = '';
+    $('#filter-paid').value = '';
     $('#filter-from').value = toDateInput(addDays(today, -7));
     $('#filter-to').value = toDateInput(addDays(today, 60));
     readFilters();
@@ -183,8 +197,8 @@
           el('td', {}, el('div', { class: 'mono' }, r.planeTail), el('div', { class: 'tiny muted' }, r.ownerName)),
           el(
             'td',
-            {},
-            el('div', {}, formatRange(r.start, r.end)),
+            { class: 'nowrap' },
+            el('div', {}, formatRangeShort(r.start, r.end)),
             el('div', { class: 'tiny muted' }, durationLabel(r.start, r.end))
           ),
           el(
@@ -200,6 +214,8 @@
             isBlock ? null : el('div', { class: 'muted' }, r.renterEmail || '')
           ),
           el('td', {}, tachCell(r)),
+          el('td', { class: 'center' }, paidCell(r)),
+          el('td', {}, adminNotesCell(r)),
           el(
             'td',
             {},
@@ -213,6 +229,85 @@
         )
       );
     }
+  }
+
+  /* Saves one field of one reservation, rolling the control back if the
+     server refuses. Used by the three in-place editors below. */
+  async function patchField(reservation, patch, control, revert, successText) {
+    control.disabled = true;
+    try {
+      const updated = await api(`/api/admin/reservations/${reservation.id}`, { method: 'PATCH', body: patch });
+      Object.assign(reservation, updated);
+      showMessage(msg, successText, 'ok');
+      return updated;
+    } catch (err) {
+      revert();
+      showMessage(msg, err.message);
+      return null;
+    } finally {
+      control.disabled = false;
+    }
+  }
+
+  /* Paid is a single click — the owners tick it off as money comes in. */
+  function paidCell(reservation) {
+    const box = el('input', {
+      type: 'checkbox',
+      class: 'paid-box',
+      checked: reservation.paid || undefined,
+      title: reservation.paid
+        ? `Paid${reservation.paidAt ? ` on ${fmtDateTime.format(new Date(reservation.paidAt))}` : ''}`
+        : 'Not paid yet',
+    });
+    box.addEventListener('change', async () => {
+      const wanted = box.checked;
+      const updated = await patchField(
+        reservation,
+        { paid: wanted },
+        box,
+        () => {
+          box.checked = !wanted;
+        },
+        `${reservation.confirmationId} marked ${wanted ? 'paid' : 'unpaid'}.`
+      );
+      if (updated) {
+        box.title = updated.paid
+          ? `Paid${updated.paidAt ? ` on ${fmtDateTime.format(new Date(updated.paidAt))}` : ''}`
+          : 'Not paid yet';
+        if (state.filters.paid !== '') loadReservations();
+        else updateFilterHint();
+      }
+    });
+    return box;
+  }
+
+  /* Owner notes: private to Vinod and Soney, never sent to a renter. */
+  function adminNotesCell(reservation) {
+    const input = el('input', {
+      class: 'notes-inline',
+      placeholder: 'Add a note…',
+      title: 'Owner-only note — renters never see this',
+      value: reservation.adminNotes || '',
+    });
+    let last = input.value;
+    input.addEventListener('change', async () => {
+      if (input.value === last) return;
+      const wanted = input.value;
+      const updated = await patchField(
+        reservation,
+        { adminNotes: wanted },
+        input,
+        () => {
+          input.value = last;
+        },
+        `Note saved for ${reservation.confirmationId}.`
+      );
+      if (updated) {
+        last = updated.adminNotes || '';
+        input.value = last;
+      }
+    });
+    return input;
   }
 
   /* Tach time is the field owners touch most, so it edits in place: type a
@@ -230,21 +325,18 @@
     let last = input.value;
     input.addEventListener('change', async () => {
       if (input.value === last) return;
-      input.disabled = true;
-      try {
-        const updated = await api(`/api/admin/reservations/${reservation.id}`, {
-          method: 'PATCH',
-          body: { tachTime: input.value === '' ? null : input.value },
-        });
+      const updated = await patchField(
+        reservation,
+        { tachTime: input.value === '' ? null : input.value },
+        input,
+        () => {
+          input.value = last;
+        },
+        `Tach time saved for ${reservation.confirmationId}.`
+      );
+      if (updated) {
         last = updated.tachTime == null ? '' : String(updated.tachTime);
         input.value = last;
-        reservation.tachTime = updated.tachTime;
-        showMessage(msg, `Tach time saved for ${reservation.confirmationId}.`, 'ok');
-      } catch (err) {
-        input.value = last;
-        showMessage(msg, err.message);
-      } finally {
-        input.disabled = false;
       }
     });
     return input;
@@ -301,6 +393,13 @@
       value: reservation && reservation.tachTime != null ? String(reservation.tachTime) : '',
     });
     const notesField = el('textarea', { id: 'm-notes' }, reservation ? reservation.notes : '');
+    const adminNotesField = el('textarea', { id: 'm-admin-notes' }, reservation ? reservation.adminNotes : '');
+    const paidField = el('input', {
+      type: 'checkbox',
+      id: 'm-paid',
+      class: 'paid-box',
+      checked: (reservation && reservation.paid) || undefined,
+    });
 
     form.append(
       el('div', { class: 'field-row' },
@@ -321,7 +420,21 @@
       ),
       el('div', { class: 'field-row' },
         el('div', { class: 'field' }, el('label', { for: 'm-status' }, 'Status'), statusSelect),
-        el('div', { class: 'field' }, el('label', { for: 'm-notes' }, 'Notes'), notesField)
+        el(
+          'div',
+          { class: 'field' },
+          el('label', { for: 'm-paid' }, 'Payment'),
+          el('label', { class: 'check-line', for: 'm-paid' }, paidField, 'Paid')
+        )
+      ),
+      el('div', { class: 'field-row' },
+        el('div', { class: 'field' }, el('label', { for: 'm-notes' }, 'Renter’s note'), notesField),
+        el(
+          'div',
+          { class: 'field' },
+          el('label', { for: 'm-admin-notes' }, 'Owner notes (renters never see these)'),
+          adminNotesField
+        )
       ),
       modalMsg
     );
@@ -369,6 +482,8 @@
         renterPhone: phoneField.value.trim(),
         renterEmail: emailField.value.trim(),
         notes: notesField.value.trim(),
+        adminNotes: adminNotesField.value.trim(),
+        paid: paidField.checked,
         status: statusSelect.value,
         tachTime: tachField.value === '' ? null : tachField.value,
       };

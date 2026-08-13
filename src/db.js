@@ -49,7 +49,10 @@ CREATE TABLE IF NOT EXISTS reservations (
   status          TEXT    NOT NULL DEFAULT 'confirmed',
   tach_time       REAL,
   tach_logged_at  INTEGER,
+  paid            INTEGER NOT NULL DEFAULT 0,
+  paid_at         INTEGER,
   notes           TEXT    NOT NULL DEFAULT '',
+  admin_notes     TEXT    NOT NULL DEFAULT '',
   created_at      INTEGER NOT NULL,
   updated_at      INTEGER NOT NULL
 );
@@ -68,6 +71,18 @@ CREATE TABLE IF NOT EXISTS sessions (
   expires_at INTEGER NOT NULL
 );
 `);
+
+/* ---------- migrations for databases created by an earlier version ---------- */
+
+function addColumnIfMissing(table, column, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (columns.some((c) => c.name === column)) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
+addColumnIfMissing('reservations', 'paid', 'INTEGER NOT NULL DEFAULT 0');
+addColumnIfMissing('reservations', 'paid_at', 'INTEGER');
+addColumnIfMissing('reservations', 'admin_notes', "TEXT NOT NULL DEFAULT ''");
 
 /* ---------- password hashing (scrypt, no external deps) ---------- */
 
@@ -97,8 +112,8 @@ const DEFAULT_SETTINGS = {
   ops_contact_name: 'Soney',
   ops_contact_phone: '(555) 010-0002',
   timezone: 'America/Chicago',
-  open_hour: '6',
-  close_hour: '21',
+  open_hour: '5',
+  close_hour: '24',
   max_days_ahead: '180',
   site_title: 'Planes for Friends',
 };
@@ -140,6 +155,15 @@ function bootstrap() {
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
     const row = db.prepare('SELECT 1 AS ok FROM settings WHERE key = ?').get(key);
     if (!row) setSetting(key, value);
+  }
+  // Calendar hours used to default to 6am–9pm. Move databases that never
+  // changed them to the current 5am–midnight default, but leave custom hours be.
+  if (getSetting('calendar_hours_v2') !== 'done') {
+    if (getSetting('open_hour') === '6' && getSetting('close_hour') === '21') {
+      setSetting('open_hour', DEFAULT_SETTINGS.open_hour);
+      setSetting('close_hour', DEFAULT_SETTINGS.close_hour);
+    }
+    setSetting('calendar_hours_v2', 'done');
   }
 }
 

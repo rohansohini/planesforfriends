@@ -59,10 +59,13 @@ function buildCsv(reservations, timeZone) {
     'Hours Reserved',
     'Tach Time',
     'Tach Logged',
+    'Paid',
+    'Paid On',
     'Renter Name',
     'Renter Phone',
     'Renter Email',
-    'Notes',
+    'Renter Notes',
+    'Owner Notes',
     'Booked At',
   ];
   const lines = [header.map(csvCell).join(',')];
@@ -80,10 +83,13 @@ function buildCsv(reservations, timeZone) {
         ((r.end - r.start) / 3600000).toFixed(2),
         r.tachTime == null ? '' : r.tachTime,
         formatInZone(r.tachLoggedAt, timeZone),
+        r.paid ? 'Paid' : 'Unpaid',
+        formatInZone(r.paidAt, timeZone),
         r.renterName,
         r.renterPhone,
         r.renterEmail,
         r.notes,
+        r.adminNotes,
         formatInZone(r.createdAt, timeZone),
       ]
         .map(csvCell)
@@ -145,6 +151,7 @@ function publicSettings() {
 /* ---------- router ---------- */
 
 const num = (v) => (v == null || v === '' ? null : Number(v));
+const paidFilter = (v) => (v === '1' ? true : v === '0' ? false : null);
 
 async function handleApi(req, res, ctx) {
   const { pathname, query, body, method, send } = ctx;
@@ -254,6 +261,7 @@ async function handleApi(req, res, ctx) {
       ownerId: num(query.get('ownerId')),
       from: num(query.get('from')),
       to: num(query.get('to')),
+      paid: paidFilter(query.get('paid')),
     });
     return send(200, reservations);
   }
@@ -268,6 +276,8 @@ async function handleApi(req, res, ctx) {
         renterPhone: body.renterPhone,
         renterEmail: body.renterEmail,
         notes: body.notes,
+        adminNotes: body.adminNotes,
+        paid: body.paid,
         kind: body.kind,
       },
       { asAdmin: true }
@@ -333,6 +343,7 @@ async function handleApi(req, res, ctx) {
       ownerId: num(query.get('ownerId')),
       from: num(query.get('from')),
       to: num(query.get('to')),
+      paid: paidFilter(query.get('paid')),
     });
     const timeZone = getSetting('timezone', 'America/Chicago');
     const csv = buildCsv(reservations, timeZone);

@@ -108,6 +108,17 @@ function formatRange(start, end) {
   return `${fmtDateTime.format(new Date(start))} – ${fmtDateTime.format(new Date(end))}`;
 }
 
+/** Compact form for dense tables: "Sat, Aug 15 · 4:00 – 7:00 AM". */
+function formatRangeShort(start, end) {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const year = startDate.getFullYear() === new Date().getFullYear() ? '' : `, ${startDate.getFullYear()}`;
+  if (isSameDay(start, end)) {
+    return `${fmtDate.format(startDate)}${year} · ${fmtTime.format(startDate)} – ${fmtTime.format(endDate)}`;
+  }
+  return `${fmtDate.format(startDate)} ${fmtTime.format(startDate)} – ${fmtDate.format(endDate)} ${fmtTime.format(endDate)}`;
+}
+
 function durationLabel(start, end) {
   const hours = (end - start) / HOUR;
   const whole = Math.floor(hours);

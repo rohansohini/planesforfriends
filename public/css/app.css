@@ -60,6 +60,7 @@ h3 { font-size: 1rem; }
 
 .wrap { width: min(1120px, 100% - 2rem); margin-inline: auto; }
 .narrow { width: min(680px, 100% - 2rem); margin-inline: auto; }
+.wrap.wide { width: min(1360px, 100% - 2rem); }
 
 main { padding: 2rem 0 4rem; }
 
@@ -171,7 +172,13 @@ button.small, .btn.small { padding: 0.3rem 0.6rem; font-size: 0.82rem; }
 }
 .cal-nav { display: flex; gap: 0.4rem; align-items: center; }
 .cal-range { font-weight: 650; }
-.cal-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+.cal-scroll {
+  overflow: auto;
+  max-height: min(620px, 72vh);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
 .cal-grid {
   display: grid;
   grid-template-columns: 62px repeat(7, minmax(92px, 1fr));
@@ -212,6 +219,8 @@ button.small, .btn.small { padding: 0.3rem 0.6rem; font-size: 0.82rem; }
   border-radius: 0;
   color: inherit;
   font-size: 0.68rem;
+  /* keep slots clear of the sticky day header when scrolled into view */
+  scroll-margin-top: 56px;
 }
 .cal-slot:hover:not(:disabled) { background: var(--sky-soft); }
 .cal-slot.hour-start { border-top-color: var(--line); }
@@ -233,6 +242,18 @@ button.small, .btn.small { padding: 0.3rem 0.6rem; font-size: 0.82rem; }
 .cal-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
 .swatch.pastsw { background: #e9edf1; }
 input.tach-inline { width: 5.5rem; padding: 0.25rem 0.4rem; font-size: 0.85rem; }
+input.notes-inline { width: 11rem; padding: 0.25rem 0.4rem; font-size: 0.85rem; }
+input.paid-box { width: 1.15rem; height: 1.15rem; accent-color: var(--good); cursor: pointer; }
+label.check-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
 .swatch { width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--line); display: inline-block; }
 .swatch.free { background: #fff; }
 .swatch.busy { background: repeating-linear-gradient(135deg, #d7dee5, #d7dee5 4px, #c5cfd8 4px, #c5cfd8 8px); }
@@ -262,6 +283,8 @@ input.tach-inline { width: 5.5rem; padding: 0.25rem 0.4rem; font-size: 0.85rem; 
 
 /* tables */
 .table-scroll { overflow-x: auto; }
+.table-scroll table { min-width: 940px; }
+td.nowrap, th.nowrap { white-space: nowrap; }
 table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); white-space: nowrap; }

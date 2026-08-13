@@ -42,7 +42,7 @@
   </section>
 
   <!-- console -->
-  <section id="console" class="wrap hidden">
+  <section id="console" class="wrap wide hidden">
     <div class="card-head">
       <h1>Admin</h1>
       <span class="tiny muted" id="summary-line"></span>
@@ -81,6 +81,14 @@
             <label for="filter-to">To</label>
             <input type="date" id="filter-to">
           </div>
+          <div>
+            <label for="filter-paid">Payment</label>
+            <select id="filter-paid">
+              <option value="">Paid and unpaid</option>
+              <option value="0">Unpaid only</option>
+              <option value="1">Paid only</option>
+            </select>
+          </div>
           <button type="button" class="secondary" id="filter-apply">Apply</button>
           <button type="button" class="secondary" id="filter-reset">Reset</button>
           <a class="btn" id="export-link" href="#" download>Download spreadsheet (CSV)</a>
@@ -99,6 +107,8 @@
                 <th>Renter</th>
                 <th>Contact</th>
                 <th>Tach</th>
+                <th>Paid</th>
+                <th>Owner notes</th>
                 <th>Status</th>
                 <th></th>
               </tr>

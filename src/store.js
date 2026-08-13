@@ -238,7 +238,10 @@ function mapReservation(row) {
     status: row.status,
     tachTime: row.tach_time,
     tachLoggedAt: row.tach_logged_at,
+    paid: !!row.paid,
+    paidAt: row.paid_at,
     notes: row.notes,
+    adminNotes: row.admin_notes,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -262,7 +265,14 @@ function getReservationByConfirmation(confirmationId) {
   return mapReservation(db.prepare(`${RES_SELECT} WHERE r.confirmation_id = ?`).get(id));
 }
 
-function listReservations({ planeId = null, ownerId = null, from = null, to = null, includeCancelled = true } = {}) {
+function listReservations({
+  planeId = null,
+  ownerId = null,
+  from = null,
+  to = null,
+  paid = null,
+  includeCancelled = true,
+} = {}) {
   const where = [];
   const args = [];
   if (planeId != null) {
@@ -280,6 +290,10 @@ function listReservations({ planeId = null, ownerId = null, from = null, to = nu
   if (to != null) {
     where.push('r.start_ts < ?');
     args.push(Number(to));
+  }
+  if (paid != null) {
+    where.push('r.paid = ?');
+    args.push(bool(paid));
   }
   if (!includeCancelled) where.push("r.status = 'confirmed'");
   const sql = `${RES_SELECT} ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY r.start_ts`;
@@ -343,10 +357,26 @@ function createReservation(input, { asAdmin = false } = {}) {
     .prepare(
       `INSERT INTO reservations
         (confirmation_id, plane_id, kind, renter_name, renter_phone, renter_email,
-         start_ts, end_ts, status, tach_time, tach_logged_at, notes, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', NULL, NULL, ?, ?, ?)`
+         start_ts, end_ts, status, tach_time, tach_logged_at, paid, paid_at, notes, admin_notes,
+         created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', NULL, NULL, ?, ?, ?, ?, ?, ?)`
     )
-    .run(confirmationId, plane.id, kind, name, phone, email, start, end, String(input.notes || '').trim(), now, now);
+    .run(
+      confirmationId,
+      plane.id,
+      kind,
+      name,
+      phone,
+      email,
+      start,
+      end,
+      asAdmin && input.paid ? 1 : 0,
+      asAdmin && input.paid ? now : null,
+      String(input.notes || '').trim(),
+      asAdmin ? String(input.adminNotes || '').trim() : '',
+      now,
+      now
+    );
   return getReservation(info.lastInsertRowid);
 }
 
@@ -393,9 +423,18 @@ function updateReservation(id, patch) {
     }
   }
 
+  let paid = existing.paid;
+  let paidAt = existing.paidAt;
+  if (patch.paid !== undefined) {
+    paid = !!patch.paid;
+    // Keep the original timestamp when it was already marked paid.
+    paidAt = paid ? existing.paidAt || Date.now() : null;
+  }
+
   db.prepare(
     `UPDATE reservations SET plane_id = ?, kind = ?, renter_name = ?, renter_phone = ?, renter_email = ?,
-       start_ts = ?, end_ts = ?, status = ?, tach_time = ?, tach_logged_at = ?, notes = ?, updated_at = ?
+       start_ts = ?, end_ts = ?, status = ?, tach_time = ?, tach_logged_at = ?, paid = ?, paid_at = ?,
+       notes = ?, admin_notes = ?, updated_at = ?
      WHERE id = ?`
   ).run(
     planeId,
@@ -408,7 +447,10 @@ function updateReservation(id, patch) {
     status,
     tachTime,
     tachLoggedAt,
+    bool(paid),
+    paidAt,
     patch.notes !== undefined ? String(patch.notes).trim() : existing.notes,
+    patch.adminNotes !== undefined ? String(patch.adminNotes).trim() : existing.adminNotes,
     Date.now(),
     existing.id
   );

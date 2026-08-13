@@ -39,9 +39,10 @@ Owner pages are created automatically when you add an owner in the admin console
 ## How renting works
 
 1. **Pick a plane.** Every owner page shows a plane picker, even when the owner has only one.
-2. **Pick a time.** The week calendar shows 30-minute slots. Time that is already booked is
-   striped, greyed out and unclickable — a hard block, not a warning. Past time is greyed out
-   too. The exact start/end can be fine-tuned in the two time fields under the calendar.
+2. **Pick a time.** The week calendar runs 5am to midnight in 30-minute slots, scrolling inside
+   its own box and opening at 7am. Time that is already booked is striped, greyed out and
+   unclickable — a hard block, not a warning. Past time is greyed out too. The exact start and
+   end can be fine-tuned in the two time fields under the calendar.
 3. **Leave your details.** Name, phone, email. The server re-checks for a conflict at the moment
    of booking, so two people clicking at once cannot double-book.
 4. **Get a confirmation ID** like `PFF-7K3QD2`, shown on screen along with the four
@@ -68,25 +69,34 @@ characters like `0`/`O` removed), so they cannot be guessed by counting up.
 Sign in at `/admin` with the shared password.
 
 - **Schedule** — every reservation across every plane and every owner. Filter by plane with the
-  dropdown (grouped by owner) and by date range. Tach time edits inline: type a number, tab
-  away, saved. Everything else — plane, times, renter details, notes, status — is in the Edit
-  modal, which also deletes.
+  dropdown (grouped by owner), by date range, and by payment (paid / unpaid / both). The line
+  under the filters totals the records shown, how many are unpaid, and the tach hours logged.
+  Three things edit in place, no modal: **tach time** (type a number, tab away), the **Paid**
+  checkbox, and **Owner notes**. Everything else — plane, times, renter details, status — is in
+  the Edit modal, which also deletes.
+  - **Paid** is a plain tick-box the owners check as money comes in; the date it was ticked is
+    kept and shown on hover, and renters never see any of it.
+  - **Owner notes** are private to Vinod and Soney — separate from the note a renter leaves when
+    booking, which shows under their name in the same table.
   - **Add reservation** books on someone's behalf (phone-in bookings).
   - **Block off time** marks a plane unavailable for maintenance or personal use; renters see it
     as taken with no explanation.
   - **Download spreadsheet (CSV)** exports exactly what the filters show — one row per
-    reservation with tach time, hours reserved, renter contact and notes. Opens in Excel,
-    Numbers or Google Sheets.
+    reservation with tach time, hours reserved, paid status and date, renter contact, and both
+    the renter's note and the owner notes. Opens in Excel, Numbers or Google Sheets.
 - **Planes** — add a plane, assign it to an owner, edit tail number/model/nickname/renter notes,
   hide it from the site without deleting, or delete it outright. Adding a plane puts it on that
   owner's page immediately.
 - **Owners** — add anyone to rent from, which creates their `/rent/<name>` page. Their phone
   number is what renters see for pricing. Owners can be hidden without being deleted.
 - **Settings** — site title, the "problems" contact name and number, the export time zone, the
-  hours the calendar shows, how far ahead renters can book, and the admin password.
+  hours the calendar shows (5am–midnight by default), how far ahead renters can book, and the
+  admin password.
 
 ## Notes and limits
 
+- **Payment is tracked, not processed.** Money changes hands however the owners already do it;
+  the site just records who has paid.
 - **No notifications.** Nothing is texted or emailed; the confirmation is shown on screen, and
   owners see new bookings when they open the admin page.
 - **Times display in each browser's local time zone.** The time zone in Settings is used for the

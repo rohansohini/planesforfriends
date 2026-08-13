@@ -3,6 +3,8 @@
    selection is refused if it would run through one. No renter details ever
    reach this component — the server only sends anonymous busy windows. */
 
+const DEFAULT_VIEW_HOUR = 7;
+
 function createWeekCalendar(options) {
   const {
     mount,
@@ -47,6 +49,7 @@ function createWeekCalendar(options) {
     { class: 'cal-legend' },
     el('span', {}, el('i', { class: 'swatch free' }), 'Available'),
     el('span', {}, el('i', { class: 'swatch busy' }), 'Already booked'),
+    el('span', {}, el('i', { class: 'swatch pastsw' }), 'Past'),
     el('span', {}, el('i', { class: 'swatch sel' }), 'Your selection')
   );
 
@@ -146,6 +149,17 @@ function createWeekCalendar(options) {
     }
   }
 
+  /* The grid runs from early morning to midnight but scrolls inside its own box,
+     so park it on the hours people actually fly rather than at the top. */
+  function scrollToHour(hour) {
+    const index = Math.round(((hour - openHour) * 60) / slotMinutes);
+    const cell = grid.querySelectorAll('.cal-time')[index];
+    const header = grid.querySelector('.cal-head');
+    if (!cell || !header) return;
+    const offset = cell.getBoundingClientRect().top - grid.getBoundingClientRect().top;
+    scroller.scrollTop = Math.max(0, offset - header.getBoundingClientRect().height);
+  }
+
   async function refresh() {
     const from = state.weekStart;
     const to = addDays(state.weekStart, 7);
@@ -164,6 +178,7 @@ function createWeekCalendar(options) {
       if (requestId === state.requestId) {
         state.loading = false;
         render();
+        scrollToHour(state.selection ? new Date(state.selection.start).getHours() - 1 : DEFAULT_VIEW_HOUR);
       }
     }
   }
