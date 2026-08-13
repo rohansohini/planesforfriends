@@ -18,8 +18,9 @@ one thing about Oracle you need to know before you build on it.
 > ### Oracle can reclaim an idle machine
 >
 > Oracle's published policy: an Always Free instance counts as **idle** if, across a 7-day
-> window, its 95th-percentile CPU use is under 20%, network use is under 20%, and (on Ampere A1
-> shapes) memory use is under 20%. Idle instances **may be reclaimed**.
+> window, its 95th-percentile CPU use is under 20%, network use is under 20%, and — on the
+> Ampere A1 shapes, which is what you will be running — memory use is under 20%. Idle instances
+> **may be reclaimed**.
 >
 > Be clear-eyed: a plane rental site for two friends is idle by that definition almost all of
 > the time. This is a real risk, not a footnote. Three ways to handle it, best first:
@@ -82,14 +83,15 @@ fire, something got created that is not free and you will know the same day inst
 end of the month.
 
 **What could actually cost money**, if you upgrade to Pay As You Go later: not your renters. The
-free allowance is 2 micro machines, 200 GB of disk and **10 TB of outbound traffic a month**.
-This site is about 51 KB per visit, so 10 TB is roughly 210 million page views — you will use a
-rounding error of it. Ten years of bookings at 20 a week comes to about 38 MB of database
-against a 200 GB allowance.
+free allowance is **4 ARM CPUs and 24 GB of memory** across your machines, 200 GB of disk and
+**10 TB of outbound traffic a month**. This site is about 51 KB per visit, so 10 TB is roughly
+210 million page views — you will use a rounding error of it. Ten years of bookings at 20 a week
+comes to about 38 MB of database against a 200 GB allowance.
 
-The way people get charged is by *creating* something outside the free set: a second machine on
-a shape without the **Always Free eligible** label, an oversized disk, a load balancer. So make
-the one machine in step 2, and then leave the console alone.
+The way people get charged is by *creating* something outside the free set: a machine on a shape
+without the **Always Free eligible** label, more than 4 OCPUs or 24 GB of A1 in total, an
+oversized disk, a load balancer. So make the one machine in step 2, and then leave the console
+alone.
 
 ## 2. Create the machine (~5 min)
 
@@ -98,16 +100,38 @@ In the menu (☰ top left): **Compute → Instances → Create instance**.
 Change three things and leave everything else alone:
 
 - **Name**: `planesforfriends`
-- **Image**: click *Edit* next to Image and shape, choose **Ubuntu** (22.04 or 24.04)
-- **Shape**: choose **VM.Standard.E2.1.Micro**. Look for the words **Always Free eligible** next
-  to it. Take this one, not the "Ampere" ARM shapes — those are free too but usually out of
-  stock, which is a wall you do not need to hit today.
+- **Shape**: click *Edit* next to Image and shape → **Change shape** → **Ampere** →
+  **VM.Standard.A1.Flex**, the one labelled **Always Free eligible**. Set **1 OCPU** and
+  **6 GB** of memory. (The free allowance is 4 OCPUs and 24 GB across all your A1 machines, so
+  one quarter of it is yours to spend here and there is no prize for using the rest. 1 and 6 is
+  already far more than this site needs.)
+- **Image**: **Ubuntu** 22.04 or 24.04. The console only offers images that fit the shape, so
+  you will automatically get the ARM build.
 
 Under **Add SSH keys**, choose **Save private key** and download the file. You may never need it
-(the browser terminal in step 4 does not), but losing it locks you out later.
+(the browser terminal in step 5 does not), but losing it locks you out later.
 
 Click **Create**. After a minute the state turns to **Running** and there is a **Public IP
 address** on the page — something like `152.70.113.8`. **Copy it.** You need it twice.
+
+> **A1.Flex is an ARM machine**, a different kind of chip from the laptop you are reading this
+> on. It makes no difference here: this site has no add-on components to compile, and both
+> things the installer downloads (Node and Caddy) publish ARM builds. Nothing extra to do.
+
+> **"Out of host capacity" or "Out of capacity for shape VM.Standard.A1.Flex"**
+>
+> Expect this — the free ARM machines are in heavy demand, and it is the one wall most people
+> hit. It means "not right now", not "not ever". In order:
+>
+> 1. Change the **Availability domain** (AD-1 / AD-2 / AD-3, on the same Create screen) and try
+>    each one. Many regions have stock in only one.
+> 2. Try again in a few hours, and at an odd hour — capacity frees up constantly. Repeatedly
+>    clicking Create is normal behaviour here, not a sign you did something wrong.
+> 3. Ask for less: 1 OCPU and 6 GB is far likelier to land than 4 and 24.
+> 4. **Upgrade the account to Pay As You Go.** Paid accounts are widely reported to get capacity
+>    where free accounts are refused, and it also takes you out of the idle-reclamation pool.
+>    Always Free resources stay free after upgrading — see step 1 for what that does and does not
+>    mean for your card.
 
 ## 3. Get a free web address (~5 min)
 

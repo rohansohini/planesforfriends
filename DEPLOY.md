@@ -26,7 +26,7 @@ instances. (Free tiers do change; check the current terms before you rely on one
 | --- | --- | --- |
 | What you get | 1 VM, 1 GB RAM, 30 GB disk | up to 4 cores, 24 GB RAM, 200 GB disk |
 | Regions | us-west1, us-central1, us-east1 only | most |
-| Catch | public IPv4 is billed separately (~$3/month), so not truly free | idle instances can be reclaimed; ARM capacity often unavailable |
+| Catch | public IPv4 is billed separately (~$3/month), so not truly free | idle instances can be reclaimed; A1 capacity is often unavailable at first |
 
 Neither is quite as free as it sounds. Google no longer includes the public internet address, so
 budget roughly $3/month there. Oracle still includes it, but publishes an idle-reclamation
@@ -35,9 +35,15 @@ policy: an Always Free instance is deemed idle when, over 7 days, 95th-percentil
 reclaimed. A rental site for two friends meets that definition nearly always.
 
 Mitigations, in order: upgrade the Oracle account to Pay As You Go (Always Free resources stay
-free, and paid accounts are widely reported to be exempt from reclamation); keep backups off the
-machine so a rebuild is 15 minutes; or pay for a host that has no such policy. Do not run a
-CPU-burning "keep busy" daemon — it works and it is a waste of a machine.
+free, and paid accounts are widely reported both to be exempt from reclamation and to get A1
+capacity where free accounts are refused); keep backups off the machine so a rebuild is 15
+minutes; or pay for a host that has no such policy. Do not run a CPU-burning "keep busy" daemon
+— it works and it is a waste of a machine.
+
+Oracle's Always Free compute is `VM.Standard.A1.Flex` (ARM, up to 4 OCPUs and 24 GB across your
+instances). The older AMD `VM.Standard.E2.1.Micro` is not offered to every account or region, so
+do not count on it. ARM changes nothing for this app — no native dependencies to compile, and
+both Node and Caddy publish arm64 packages, which `deploy/install.sh` picks up automatically.
 
 **Then, on the machine:**
 
