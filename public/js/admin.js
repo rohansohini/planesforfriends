@@ -6,6 +6,7 @@
     planes: [],
     settings: null,
     reservations: [],
+    calendar: null,
     filters: { planeId: '', from: null, to: null, paid: '' },
   };
 
@@ -61,7 +62,9 @@
     $('#summary-line').textContent =
       `${state.owners.length} owner${state.owners.length === 1 ? '' : 's'} · ` +
       `${state.planes.length} plane${state.planes.length === 1 ? '' : 's'}`;
-    await loadReservations();
+    const firstLoad = !state.calendar;
+    setupCalendar();
+    await Promise.all([loadReservations(), state.calendar.refresh({ keepScroll: !firstLoad })]);
   }
 
   /* ---------- tabs ---------- */
@@ -70,7 +73,72 @@
     tab.addEventListener('click', () => {
       $$('.tab').forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
       $$('.tab-panel').forEach((p) => p.classList.toggle('hidden', p.dataset.panel !== tab.dataset.tab));
+      if (tab.dataset.tab === 'calendar' && state.calendar) state.calendar.refresh({ keepScroll: true });
     });
+  });
+
+  /* ---------- calendar view ---------- */
+
+  function setupCalendar() {
+    if (state.calendar) return;
+    state.calendar = createWeekCalendar({
+      mount: $('#admin-calendar'),
+      openHour: state.settings.openHour,
+      closeHour: state.settings.closeHour,
+      slotMinutes: 30,
+      allowPast: true,
+      selectable: false,
+      legendItems: [
+        { tone: 'rental', label: 'Rental' },
+        { tone: 'paid', label: 'Rental — paid' },
+        { tone: 'block', label: 'Blocked off' },
+        { tone: 'cancelled', label: 'Cancelled' },
+      ],
+      onNotice: (text) => showMessage(msg, text),
+      onEmptyClick: (start, end) => {
+        const planeId = Number($('#cal-plane').value) || null;
+        openReservationModal(null, 'rental', { start, end, planeId, onSaved: refreshCalendar });
+      },
+      loadEvents: async (from, to) => {
+        const planeId = $('#cal-plane').value;
+        const params = new URLSearchParams({ from: String(from), to: String(to) });
+        if (planeId) params.set('planeId', planeId);
+        const reservations = await api(`/api/admin/reservations?${params}`);
+        return reservations.map((r) => ({
+          start: r.start,
+          end: r.end,
+          title: r.kind === 'block' ? 'Blocked off' : r.renterName || 'Reservation',
+          subtitle: [r.planeTail, r.paid ? 'paid' : null, r.tachTime != null ? `tach ${r.tachTime}` : null]
+            .filter(Boolean)
+            .join(' · '),
+          tone:
+            r.status !== 'confirmed'
+              ? 'cancelled'
+              : r.kind === 'block'
+                ? 'block'
+                : r.paid
+                  ? 'paid'
+                  : 'rental',
+          blocks: r.status === 'confirmed',
+          onClick: () => openReservationModal(r, r.kind, { onSaved: refreshCalendar }),
+        }));
+      },
+    });
+  }
+
+  function refreshCalendar() {
+    if (state.calendar) state.calendar.refresh({ keepScroll: true });
+    loadReservations();
+  }
+
+  $('#cal-plane').addEventListener('change', () => refreshCalendar());
+  $('#cal-add-btn').addEventListener('click', () => {
+    const planeId = Number($('#cal-plane').value) || null;
+    openReservationModal(null, 'rental', { planeId, onSaved: refreshCalendar });
+  });
+  $('#cal-block-btn').addEventListener('click', () => {
+    const planeId = Number($('#cal-plane').value) || null;
+    openReservationModal(null, 'block', { planeId, onSaved: refreshCalendar });
   });
 
   /* ---------- shared select builders ---------- */
@@ -82,9 +150,9 @@
     return `${bits.join(' · ')} (${plane.ownerName})`;
   }
 
-  function planeOptions(select, { includeAll = false, selected = '' } = {}) {
+  function planeOptions(select, { includeAll = false, selected = '', allLabel = 'All planes' } = {}) {
     select.replaceChildren();
-    if (includeAll) select.append(el('option', { value: '' }, 'All planes'));
+    if (includeAll) select.append(el('option', { value: '' }, allLabel));
     const byOwner = new Map();
     for (const plane of state.planes) {
       if (!byOwner.has(plane.ownerName)) byOwner.set(plane.ownerName, []);
@@ -109,6 +177,7 @@
 
   function renderPlaneSelects() {
     planeOptions($('#filter-plane'), { includeAll: true, selected: state.filters.planeId });
+    planeOptions($('#cal-plane'), { includeAll: true, allLabel: 'All planes together', selected: $('#cal-plane').value });
     const ownerSelect = $('#plane-owner');
     const previous = ownerSelect.value;
     ownerSelect.replaceChildren(
@@ -193,39 +262,39 @@
         el(
           'tr',
           { class: cancelled ? 'cancelled' : '' },
-          el('td', { class: 'mono tiny' }, r.confirmationId),
+          el(
+            'td',
+            {},
+            el('div', { class: 'mono tiny' }, r.confirmationId),
+            cancelled ? el('div', { class: 'badge badge-bad' }, 'Cancelled') : null,
+            el(
+              'button',
+              { class: 'secondary small', type: 'button', style: 'margin-top:0.3rem', onclick: () => openReservationModal(r) },
+              'Edit'
+            )
+          ),
           el('td', {}, el('div', { class: 'mono' }, r.planeTail), el('div', { class: 'tiny muted' }, r.ownerName)),
           el(
             'td',
             { class: 'nowrap' },
-            el('div', {}, formatRangeShort(r.start, r.end)),
-            el('div', { class: 'tiny muted' }, durationLabel(r.start, r.end))
+            el('div', {}, fmtDate.format(new Date(r.start))),
+            el(
+              'div',
+              { class: 'tiny muted' },
+              `${fmtTime.format(new Date(r.start))} – ${fmtTime.format(new Date(r.end))} · ${durationLabel(r.start, r.end)}`
+            )
           ),
           el(
             'td',
             {},
-            isBlock ? el('span', { class: 'badge badge-warn' }, 'Blocked') : r.renterName || '—',
-            r.notes ? el('div', { class: 'tiny muted' }, r.notes) : null
-          ),
-          el(
-            'td',
-            { class: 'tiny' },
-            isBlock ? '—' : el('div', {}, r.renterPhone || '—'),
-            isBlock ? null : el('div', { class: 'muted' }, r.renterEmail || '')
+            isBlock ? el('span', { class: 'badge badge-warn' }, 'Blocked off') : el('div', {}, r.renterName || '—'),
+            isBlock ? null : el('div', { class: 'tiny' }, r.renterPhone || ''),
+            isBlock ? null : el('div', { class: 'tiny muted' }, r.renterEmail || ''),
+            r.notes ? el('div', { class: 'tiny muted' }, `“${r.notes}”`) : null
           ),
           el('td', {}, tachCell(r)),
           el('td', { class: 'center' }, paidCell(r)),
-          el('td', {}, adminNotesCell(r)),
-          el(
-            'td',
-            {},
-            el('span', { class: `badge ${cancelled ? 'badge-bad' : 'badge-good'}` }, cancelled ? 'Cancelled' : 'Confirmed')
-          ),
-          el(
-            'td',
-            { class: 'actions' },
-            el('button', { class: 'secondary small', type: 'button', onclick: () => openReservationModal(r) }, 'Edit')
-          )
+          el('td', {}, adminNotesCell(r))
         )
       );
     }
@@ -347,10 +416,12 @@
 
   /* ---------- reservation modal ---------- */
 
-  function openReservationModal(reservation, defaultKind = 'rental') {
+  function openReservationModal(reservation, defaultKind = 'rental', prefill = {}) {
     const isNew = !reservation;
     const kind = reservation ? reservation.kind : defaultKind;
-    const defaultStart = startOfDay(Date.now()) + 9 * HOUR;
+    const defaultStart = prefill.start || startOfDay(Date.now()) + 9 * HOUR;
+    const defaultEnd = prefill.end || defaultStart + 2 * HOUR;
+    const afterSave = prefill.onSaved || loadReservations;
 
     const form = el('form', { class: 'stack', novalidate: true });
     const modalMsg = el('div', { class: 'hidden' });
@@ -380,7 +451,7 @@
       type: 'datetime-local',
       id: 'm-end',
       step: '900',
-      value: toLocalInput(reservation ? reservation.end : defaultStart + 2 * HOUR),
+      value: toLocalInput(reservation ? reservation.end : defaultEnd),
     });
     const nameField = el('input', { id: 'm-name', value: reservation ? reservation.renterName : '' });
     const phoneField = el('input', { id: 'm-phone', type: 'tel', value: reservation ? reservation.renterPhone : '' });
@@ -439,7 +510,9 @@
       modalMsg
     );
 
-    planeOptions(planeSelect, { selected: reservation ? reservation.planeId : state.planes[0] && state.planes[0].id });
+    planeOptions(planeSelect, {
+      selected: reservation ? reservation.planeId : prefill.planeId || (state.planes[0] && state.planes[0].id),
+    });
 
     const saveBtn = el('button', { type: 'submit' }, isNew ? 'Create' : 'Save changes');
     const footer = el(
@@ -456,7 +529,7 @@
                 try {
                   await api(`/api/admin/reservations/${reservation.id}`, { method: 'DELETE' });
                   close();
-                  loadReservations();
+                  afterSave();
                 } catch (err) {
                   showMessage(modalMsg, err.message);
                 }
@@ -499,7 +572,7 @@
           await api(`/api/admin/reservations/${reservation.id}`, { method: 'PATCH', body: payload });
         }
         close();
-        loadReservations();
+        afterSave();
       } catch (err) {
         showMessage(modalMsg, err.message);
       } finally {

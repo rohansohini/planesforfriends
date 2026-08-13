@@ -19,8 +19,13 @@ Useful environment variables:
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `3000` | Port to listen on |
-| `ADMIN_PASSWORD` | `flyplanes` | Admin password, only read the first time the database is created |
+| `ADMIN_PASSWORD` | generated | Admin password, only read the first time the database is created |
 | `PFF_DB_PATH` | `data/planesforfriends.db` | Where the SQLite file lives |
+
+On the very first run — when the database file does not exist yet — the server prints a
+generated admin password in a box in the terminal, e.g. `hangar-tailwind-284`. Write it down;
+it is shown once. Set `ADMIN_PASSWORD` before that first run to choose your own instead, or
+change it later at `/admin` under Settings.
 
 The whole system is one SQLite file. Back it up by copying `data/planesforfriends.db`.
 
@@ -35,6 +40,16 @@ The whole system is one SQLite file. Back it up by copying `data/planesforfriend
 
 Owner pages are created automatically when you add an owner in the admin console — add
 "Raj Patel" and `/rent/raj-patel` is live immediately.
+
+## Built for readers who are not 25
+
+The customers here are mostly older pilots, so the whole site is sized for that: 18px base
+text, buttons and inputs at least 48px tall, colours that clear WCAG AA contrast, and a
+**Larger text** button in the header that bumps everything to 21px and remembers the choice.
+Booked time is a solid labelled block rather than a subtle stripe, the renter page is three
+numbered steps with one obvious button at the end, and error messages say what to do next.
+The calendar drops to three days on a tablet and one day on a phone, so nobody has to scroll
+a small screen sideways to find Thursday.
 
 ## How renting works
 
@@ -68,7 +83,12 @@ characters like `0`/`O` removed), so they cannot be guessed by counting up.
 
 Sign in at `/admin` with the shared password.
 
-- **Schedule** — every reservation across every plane and every owner. Filter by plane with the
+- **Calendar** — the week at a glance for one plane, or every plane at once with overlapping
+  bookings drawn side by side. Colour tells you the state: blue is a rental, green is a rental
+  that has been paid, amber is time blocked off, grey struck through is cancelled. Tap a
+  booking to edit it, tap any empty slot to create one starting at that time, and a red line
+  marks right now.
+- **List & export** — every reservation across every plane and every owner. Filter by plane with the
   dropdown (grouped by owner), by date range, and by payment (paid / unpaid / both). The line
   under the filters totals the records shown, how many are unpaid, and the tach hours logged.
   Three things edit in place, no modal: **tach time** (type a number, tab away), the **Paid**
@@ -116,5 +136,6 @@ src/store.js         owners / planes / reservations, conflict checks
 src/api.js           JSON API, instructions, CSV export
 src/auth.js          admin sessions
 public/              index.html, rent.html, lookup.html, admin.html + css/js
+public/js/calendar.js  week calendar shared by the renter pages and the admin console
 scripts/seed.js      starting owners and planes
 ```

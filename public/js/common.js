@@ -153,7 +153,19 @@ function fromDateInput(value, endOfDay = false) {
   return Number.isFinite(ts) ? ts : null;
 }
 
-/* ---------- header nav highlight ---------- */
+/* ---------- header: current page + text size ---------- */
+
+const TEXT_KEY = 'pff-text';
+
+function setTextSize(size) {
+  if (size === 'large') document.documentElement.dataset.text = 'large';
+  else delete document.documentElement.dataset.text;
+  try {
+    localStorage.setItem(TEXT_KEY, size);
+  } catch {
+    /* private browsing — the choice just won't stick */
+  }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   const here = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -161,4 +173,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const href = link.getAttribute('href');
     if (href === here || (href !== '/' && here.startsWith(href))) link.setAttribute('aria-current', 'page');
   });
+
+  const nav = $('.site-header nav');
+  if (!nav) return;
+  const button = el('button', {
+    type: 'button',
+    class: 'text-toggle',
+    title: 'Switch between normal and larger text',
+  });
+  const paint = () => {
+    const large = document.documentElement.dataset.text === 'large';
+    button.textContent = large ? 'Normal text' : 'Larger text';
+    button.setAttribute('aria-pressed', String(large));
+  };
+  button.addEventListener('click', () => {
+    setTextSize(document.documentElement.dataset.text === 'large' ? 'normal' : 'large');
+    paint();
+  });
+  paint();
+  nav.append(button);
 });

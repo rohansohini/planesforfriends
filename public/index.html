@@ -7,6 +7,7 @@
 <meta name="description" content="Rent a plane from Vinod, Soney and friends. No account needed.">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='19' font-size='20'>✈️</text></svg>">
+<script>try{var t=localStorage.getItem('pff-text');if(t==='large')document.documentElement.dataset.text='large';}catch(e){}</script>
 </head>
 <body>
 <header class="site-header">
@@ -17,8 +18,8 @@
     </a>
     <nav>
       <a href="/">Home</a>
-      <a href="/lookup">Confirmation &amp; tach time</a>
-      <a href="/admin">Admin</a>
+      <a href="/lookup">My reservation</a>
+      <a href="/admin">Owners</a>
     </nav>
   </div>
 </header>
@@ -27,23 +28,39 @@
   <div class="wrap">
     <div class="card">
       <h1>Rent a plane from a friend</h1>
-      <p class="muted">
-        Pick whose plane you want to fly, choose an open time on the calendar, and leave your name and
-        number. No account, no password — you just get a confirmation ID to hang onto.
+      <p class="lead">
+        Pick whose plane you want to fly, choose an open time on the calendar, and leave your name
+        and number. There is no account to make and no password to remember.
       </p>
     </div>
 
     <div id="msg" class="hidden"></div>
 
-    <h2>Whose plane are you flying?</h2>
-    <div id="owners" class="plane-picker" aria-live="polite">
+    <h2>Who are you renting from?</h2>
+    <div id="owners" class="picker" aria-live="polite">
       <p class="muted">Loading…</p>
     </div>
 
-    <div class="card" style="margin-top:1.5rem">
-      <h2>Already flew?</h2>
-      <p class="muted">Enter your confirmation ID to see your reservation and log your tach time.</p>
-      <a class="btn" href="/lookup">Look up a reservation</a>
+    <h2 style="margin-top:2rem">How it works</h2>
+    <div class="how">
+      <div class="how-item">
+        <h3><span class="n">1</span> Pick your time</h3>
+        <p>Open times are white. Anything already booked is greyed out and cannot be picked.</p>
+      </div>
+      <div class="how-item">
+        <h3><span class="n">2</span> Leave your details</h3>
+        <p>Your name, phone and email. You get a confirmation number on the screen right away.</p>
+      </div>
+      <div class="how-item">
+        <h3><span class="n">3</span> Log your tach time</h3>
+        <p>After you fly, come back with that confirmation number and type in the tach reading.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:2rem">
+      <h2>Already booked a flight?</h2>
+      <p class="muted">Look up your reservation with your confirmation number, and log your tach time.</p>
+      <a class="btn" href="/lookup">Find my reservation</a>
     </div>
   </div>
 </main>
@@ -71,13 +88,15 @@
       list.append(
         el(
           'a',
-          { class: 'plane-option', href: `/rent/${owner.slug}` },
-          el('div', { class: 'tail' }, owner.name),
+          { class: 'picker-option', href: `/rent/${owner.slug}` },
+          el('div', { class: 'picker-title' }, owner.name),
           el(
             'div',
-            { class: 'meta' },
-            `${owner.planeCount} plane${owner.planeCount === 1 ? '' : 's'} available`
-          )
+            { class: 'picker-meta' },
+            `${owner.planeCount} plane${owner.planeCount === 1 ? '' : 's'} to rent`
+          ),
+          owner.phone ? el('div', { class: 'picker-meta' }, owner.phone) : null,
+          el('span', { class: 'picker-go' }, 'See the planes →')
         )
       );
     }

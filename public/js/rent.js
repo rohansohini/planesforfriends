@@ -31,8 +31,8 @@
       document.title = `Rent from ${data.owner.name} · ${config.siteTitle || 'Planes for Friends'}`;
       $('#owner-heading').textContent = `Rent from ${data.owner.name}`;
       $('#owner-sub').textContent = data.owner.phone
-        ? `Questions or pricing: ${data.owner.name} at ${data.owner.phone}`
-        : `Reach out to ${data.owner.name} for pricing.`;
+        ? `Call ${data.owner.name} at ${data.owner.phone} about pricing. Book your time below.`
+        : `Contact ${data.owner.name} about pricing. Book your time below.`;
 
       renderPlanePicker();
       setupCalendar();
@@ -50,7 +50,6 @@
   function renderPlanePicker() {
     const picker = $('#plane-picker');
     picker.replaceChildren();
-    $('#plane-count').textContent = `${state.planes.length} plane${state.planes.length === 1 ? '' : 's'}`;
 
     if (!state.planes.length) {
       picker.append(el('p', { class: 'muted' }, `${state.owner.name} has not listed a plane yet.`));
@@ -63,13 +62,13 @@
           'button',
           {
             type: 'button',
-            class: 'plane-option',
+            class: 'picker-option',
             'aria-pressed': 'false',
             dataset: { planeId: String(plane.id) },
             onclick: () => selectPlane(plane.id),
           },
-          el('div', { class: 'tail' }, plane.tailNumber),
-          el('div', { class: 'meta' }, [plane.nickname, plane.model].filter(Boolean).join(' · ') || 'Aircraft')
+          el('div', { class: 'picker-title tail' }, plane.tailNumber),
+          el('div', { class: 'picker-meta' }, [plane.nickname, plane.model].filter(Boolean).join(' · ') || 'Aircraft')
         )
       );
     }
@@ -77,7 +76,7 @@
 
   function selectPlane(planeId) {
     state.planeId = planeId;
-    $$('#plane-picker .plane-option').forEach((btn) => {
+    $$('#plane-picker .picker-option').forEach((btn) => {
       btn.setAttribute('aria-pressed', String(Number(btn.dataset.planeId) === planeId));
     });
     const plane = state.planes.find((p) => p.id === planeId);
@@ -100,10 +99,17 @@
         syncSelectionUi();
         showMessage(formMsg, '');
       },
-      loadBusy: async (from, to) => {
+      loadEvents: async (from, to) => {
         if (!state.planeId) return [];
         const data = await api(`/api/availability?planeId=${state.planeId}&from=${from}&to=${to}`);
-        return data.busy;
+        // Anonymous on purpose: the server never tells us who booked it.
+        return data.busy.map((window) => ({
+          start: window.start,
+          end: window.end,
+          title: 'Booked',
+          tone: 'busy',
+          blocks: true,
+        }));
       },
     });
   }
@@ -116,20 +122,23 @@
 
   function syncSelectionUi() {
     const summary = $('#selection-summary');
+    const detail = $('#selection-detail');
     if (!state.selection) {
       summary.className = 'muted';
-      summary.textContent = 'Tap a start time, then tap an end time on the calendar.';
+      summary.style.margin = '0';
+      summary.textContent = 'Nothing picked yet — tap a start time on the calendar above.';
+      detail.classList.add('hidden');
       startInput.value = '';
       endInput.value = '';
       return;
     }
     const { start, end } = state.selection;
     summary.className = '';
-    summary.innerHTML = '';
-    summary.append(
-      el('strong', {}, formatRange(start, end)),
-      el('span', { class: 'muted' }, ` · ${durationLabel(start, end)}`)
+    summary.replaceChildren(
+      el('strong', { style: 'font-size:1.15rem' }, formatRange(start, end)),
+      el('span', {}, ` — ${durationLabel(start, end)}`)
     );
+    detail.classList.remove('hidden');
     startInput.value = toLocalInput(start);
     endInput.value = toLocalInput(end);
   }
@@ -139,7 +148,7 @@
     const end = fromLocalInput(endInput.value);
     if (start == null || end == null) return;
     if (end <= start) {
-      showMessage(formMsg, 'The end time has to be after the start time.');
+      showMessage(formMsg, 'The finish time has to be after the start time.');
       return;
     }
     if (state.calendar.overlapsBusy(start, end)) {
@@ -176,8 +185,8 @@
     if (state.submitting) return;
     showMessage(formMsg, '');
 
-    if (!state.planeId) return showMessage(formMsg, 'Pick a plane first.');
-    if (!state.selection) return showMessage(formMsg, 'Pick a time on the calendar.');
+    if (!state.planeId) return showMessage(formMsg, 'Please choose a plane in step 1.');
+    if (!state.selection) return showMessage(formMsg, 'Please pick a time on the calendar in step 2.');
 
     const payload = {
       planeId: state.planeId,
@@ -203,6 +212,7 @@
         setSelection(null);
         state.calendar.refresh();
       }
+      $('#form-msg').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } finally {
       state.submitting = false;
       button.disabled = false;
@@ -220,18 +230,11 @@
       ['Owner', reservation.ownerName],
       ['When', formatRange(reservation.start, reservation.end)],
       ['How long', durationLabel(reservation.start, reservation.end)],
-      ['Renter', reservation.renterName],
+      ['Your name', reservation.renterName],
       ['Contact', `${reservation.renterPhone} · ${reservation.renterEmail}`],
     ];
     for (const [label, value] of rows) {
-      details.append(
-        el(
-          'div',
-          { class: 'row', style: 'gap:0.5rem;align-items:baseline;border-bottom:1px solid var(--line);padding:0.4rem 0' },
-          el('dt', { style: 'flex:0 0 110px;color:var(--ink-soft);font-size:0.82rem;font-weight:600' }, label),
-          el('dd', { style: 'margin:0;flex:1 1 200px' }, value)
-        )
-      );
+      details.append(el('div', { class: 'detail-row' }, el('dt', {}, label), el('dd', {}, value)));
     }
 
     const list = $('#conf-instructions');

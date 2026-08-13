@@ -7,6 +7,7 @@
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='19' font-size='20'>✈️</text></svg>">
+<script>try{var t=localStorage.getItem('pff-text');if(t==='large')document.documentElement.dataset.text='large';}catch(e){}</script>
 </head>
 <body>
 <header class="site-header">
@@ -17,8 +18,8 @@
     </a>
     <nav>
       <a href="/">Home</a>
-      <a href="/lookup">Confirmation &amp; tach time</a>
-      <a href="/admin">Admin</a>
+      <a href="/lookup">My reservation</a>
+      <a href="/admin">Owners</a>
       <a href="#" id="logout-link" class="hidden">Sign out</a>
     </nav>
   </div>
@@ -28,15 +29,15 @@
   <!-- login -->
   <section id="login" class="narrow hidden">
     <div class="card">
-      <h1>Admin sign in</h1>
-      <p class="muted">One shared password for the owners.</p>
+      <h1>Owner sign in</h1>
+      <p class="lead">One shared password for Vinod and Soney.</p>
       <form id="login-form" novalidate>
         <div class="field">
           <label for="password">Password</label>
           <input id="password" type="password" autocomplete="current-password" required>
         </div>
         <div id="login-msg" class="hidden"></div>
-        <button type="submit" class="btn-block">Sign in</button>
+        <button type="submit" class="btn-big">Sign in</button>
       </form>
     </div>
   </section>
@@ -51,14 +52,41 @@
     <div id="msg" class="hidden"></div>
 
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="schedule" aria-selected="true">Schedule</button>
+      <button class="tab" role="tab" data-tab="calendar" aria-selected="true">Calendar</button>
+      <button class="tab" role="tab" data-tab="schedule" aria-selected="false">List &amp; export</button>
       <button class="tab" role="tab" data-tab="planes" aria-selected="false">Planes</button>
       <button class="tab" role="tab" data-tab="owners" aria-selected="false">Owners</button>
       <button class="tab" role="tab" data-tab="settings" aria-selected="false">Settings</button>
     </div>
 
+    <!-- calendar -->
+    <div class="tab-panel" data-panel="calendar">
+      <div class="card">
+        <div class="card-head">
+          <h2>Calendar</h2>
+          <div class="row">
+            <button type="button" class="secondary small" id="cal-block-btn">Block off time</button>
+            <button type="button" class="small" id="cal-add-btn">Add reservation</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="grow">
+            <label for="cal-plane">Plane</label>
+            <select id="cal-plane"></select>
+          </div>
+        </div>
+        <p class="muted" style="margin:0.9rem 0 0">
+          Tap any booking to edit it. Tap an empty slot to add one at that time.
+        </p>
+      </div>
+
+      <div class="card">
+        <div id="admin-calendar"></div>
+      </div>
+    </div>
+
     <!-- schedule -->
-    <div class="tab-panel" data-panel="schedule">
+    <div class="tab-panel hidden" data-panel="schedule">
       <div class="card">
         <div class="card-head">
           <h2>Reservations</h2>
@@ -105,12 +133,9 @@
                 <th>Plane</th>
                 <th>When</th>
                 <th>Renter</th>
-                <th>Contact</th>
                 <th>Tach</th>
                 <th>Paid</th>
                 <th>Owner notes</th>
-                <th>Status</th>
-                <th></th>
               </tr>
             </thead>
             <tbody id="res-body"></tbody>
@@ -285,6 +310,7 @@
 </footer>
 
 <script src="/js/common.js"></script>
+<script src="/js/calendar.js"></script>
 <script src="/js/admin.js"></script>
 </body>
 </html>

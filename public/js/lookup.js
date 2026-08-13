@@ -48,7 +48,7 @@
     const id = String(rawId || '').trim();
     showMessage(msg, '');
     showMessage(tachMsg, '');
-    if (!id) return showMessage(msg, 'Enter your confirmation ID.');
+    if (!id) return showMessage(msg, 'Please type in your confirmation number.');
 
     const button = $('#lookup-btn');
     button.disabled = true;
@@ -89,14 +89,7 @@
       ],
     ];
     for (const [label, value] of rows) {
-      details.append(
-        el(
-          'div',
-          { class: 'row', style: 'gap:0.5rem;align-items:baseline;border-bottom:1px solid var(--line);padding:0.4rem 0' },
-          el('dt', { style: 'flex:0 0 110px;color:var(--ink-soft);font-size:0.82rem;font-weight:600' }, label),
-          el('dd', { style: 'margin:0;flex:1 1 200px' }, value)
-        )
-      );
+      details.append(el('div', { class: 'detail-row' }, el('dt', {}, label), el('dd', {}, value)));
     }
 
     const list = $('#result-instructions');
@@ -106,8 +99,8 @@
     $('#tach-input').value = reservation.tachTime == null ? '' : reservation.tachTime;
     $('#tach-help').textContent =
       reservation.tachTime == null
-        ? 'Enter the tach time for this flight. You can update it later if you need to.'
-        : 'Tach time is already logged. Enter a new number if you need to correct it.';
+        ? 'Type in the tach time for this flight. You can change it later if you need to.'
+        : 'Tach time is already saved. Type a new number if you need to correct it.';
     $('#tach-btn').textContent = reservation.tachTime == null ? 'Save tach time' : 'Update tach time';
   }
 })();

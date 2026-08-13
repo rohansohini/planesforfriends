@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Confirmation &amp; tach time · Planes for Friends</title>
+<title>My reservation · Planes for Friends</title>
 <link rel="stylesheet" href="/css/app.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='19' font-size='20'>✈️</text></svg>">
+<script>try{var t=localStorage.getItem('pff-text');if(t==='large')document.documentElement.dataset.text='large';}catch(e){}</script>
 </head>
 <body>
 <header class="site-header">
@@ -16,8 +17,8 @@
     </a>
     <nav>
       <a href="/">Home</a>
-      <a href="/lookup">Confirmation &amp; tach time</a>
-      <a href="/admin">Admin</a>
+      <a href="/lookup">My reservation</a>
+      <a href="/admin">Owners</a>
     </nav>
   </div>
 </header>
@@ -25,12 +26,14 @@
 <main>
   <div class="narrow">
     <div class="card">
-      <h1>Look up your reservation</h1>
-      <p class="muted">Enter the confirmation ID you got when you booked, e.g. <span class="mono">PFF-7K3QD2</span>.</p>
+      <h1>Find your reservation</h1>
+      <p class="lead">Type in the confirmation number you got when you booked. It looks like
+      <span class="mono">PFF-7K3QD2</span>.</p>
       <form id="lookup-form" class="row" novalidate>
         <div class="grow">
-          <label for="conf-input">Confirmation ID</label>
-          <input id="conf-input" class="mono" placeholder="PFF-XXXXXX" autocomplete="off" autocapitalize="characters" required>
+          <label for="conf-input">Confirmation number</label>
+          <input id="conf-input" class="mono" placeholder="PFF-XXXXXX" autocomplete="off"
+                 autocapitalize="characters" spellcheck="false" style="font-size:1.3rem" required>
         </div>
         <button type="submit" id="lookup-btn">Find it</button>
       </form>
@@ -43,7 +46,7 @@
           <h2 id="result-title">Your reservation</h2>
           <span id="result-status" class="badge badge-good">Confirmed</span>
         </div>
-        <dl id="result-details"></dl>
+        <dl id="result-details" class="detail-list"></dl>
       </div>
 
       <div class="card">
@@ -53,13 +56,14 @@
 
       <div class="card">
         <h2>Log your tach time</h2>
-        <p class="muted" id="tach-help">
-          Enter the tach time for this flight. You can update it later if you need to.
+        <p class="lead" id="tach-help">
+          Type in the tach time for this flight. You can change it later if you need to.
         </p>
         <form id="tach-form" class="row" novalidate>
           <div class="grow">
             <label for="tach-input">Tach time</label>
-            <input id="tach-input" type="number" step="0.1" min="0" inputmode="decimal" placeholder="e.g. 3.4" required>
+            <input id="tach-input" type="number" step="0.1" min="0" inputmode="decimal"
+                   placeholder="for example 3.4" style="font-size:1.3rem" required>
           </div>
           <button type="submit" id="tach-btn">Save tach time</button>
         </form>

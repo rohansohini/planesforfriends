@@ -142,14 +142,42 @@ function allSettings() {
 
 /* ---------- first-run bootstrap ---------- */
 
+/* Two plain words and a number: easy to read over the phone, not guessable. */
+const PASSWORD_WORDS = [
+  'hangar', 'runway', 'compass', 'propeller', 'rudder', 'aileron', 'throttle', 'altimeter',
+  'sunrise', 'tailwind', 'headwind', 'skyline', 'cockpit', 'beacon', 'chart', 'flightplan',
+  'checklist', 'magneto', 'glidepath', 'windsock', 'cloudbase', 'airspeed',
+];
+
+function generatePassword() {
+  const pick = () => PASSWORD_WORDS[crypto.randomInt(PASSWORD_WORDS.length)];
+  let first = pick();
+  let second = pick();
+  while (second === first) second = pick();
+  return `${first}-${second}-${crypto.randomInt(100, 1000)}`;
+}
+
+function banner(lines) {
+  const width = Math.max(...lines.map((line) => line.length)) + 4;
+  console.log(`\n┌${'─'.repeat(width)}┐`);
+  for (const line of lines) console.log(`│  ${line.padEnd(width - 4)}  │`);
+  console.log(`└${'─'.repeat(width)}┘\n`);
+}
+
 function bootstrap() {
   const existing = db.prepare("SELECT value FROM settings WHERE key = 'admin_password_hash'").get();
   if (!existing) {
-    const initial = process.env.ADMIN_PASSWORD || 'flyplanes';
-    setSetting('admin_password_hash', hashPassword(initial));
-    if (!process.env.ADMIN_PASSWORD) {
-      console.log('[planesforfriends] No ADMIN_PASSWORD set — admin password defaults to "flyplanes".');
-      console.log('[planesforfriends] Change it on the admin page under Settings.');
+    const generated = process.env.ADMIN_PASSWORD ? null : generatePassword();
+    setSetting('admin_password_hash', hashPassword(process.env.ADMIN_PASSWORD || generated));
+    if (generated) {
+      banner([
+        'Admin password for this new database:',
+        '',
+        `    ${generated}`,
+        '',
+        'Write it down — this is the only time it is shown.',
+        'You can change it any time at /admin under Settings.',
+      ]);
     }
   }
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
