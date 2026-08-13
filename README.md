@@ -101,6 +101,12 @@ Sign in at `/admin` with the shared password.
   - **Add reservation** books on someone's behalf (phone-in bookings).
   - **Block off time** marks a plane unavailable for maintenance or personal use; renters see it
     as taken with no explanation.
+  - **Take this time back** is the one-button answer to "I need my plane on a day somebody
+    booked it." It cancels the reservation and blocks the time off in a single step, then shows
+    the renter's phone number as a tap-to-call link so the owner can tell them. The renter's
+    confirmation number keeps working and explains that it was cancelled, with the owner's
+    number to call. Relabelling a booked rental as blocked time is refused outright, because it
+    would silently break the renter's lookup.
   - **Download spreadsheet (CSV)** exports exactly what the filters show — one row per
     reservation with tach time, hours reserved, paid status and date, renter contact, and both
     the renter's note and the owner notes. Opens in Excel, Numbers or Google Sheets.

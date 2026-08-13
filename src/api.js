@@ -288,6 +288,11 @@ async function handleApi(req, res, ctx) {
     return send(201, reservation);
   }
 
+  const takeBackMatch = pathname.match(/^\/api\/admin\/reservations\/(\d+)\/take-back$/);
+  if (takeBackMatch && method === 'POST') {
+    return send(200, store.takeBackTime(Number(takeBackMatch[1]), { notes: body.notes }));
+  }
+
   const adminResMatch = pathname.match(/^\/api\/admin\/reservations\/(\d+)$/);
   if (adminResMatch && method === 'PATCH') {
     return send(200, store.updateReservation(Number(adminResMatch[1]), body));

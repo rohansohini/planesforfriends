@@ -68,6 +68,25 @@
 
   function render(reservation) {
     const cancelled = reservation.status !== 'confirmed';
+
+    // A cancelled booking is the one case where the renter needs to be told
+    // something rather than shown a form, so say it plainly and give them the
+    // owner's number.
+    const alert = $('#result-alert');
+    if (cancelled) {
+      showMessage(
+        alert,
+        `This reservation was cancelled. The plane is not being held for you. ` +
+          `Please call ${reservation.ownerName}${reservation.ownerPhone ? ` at ${reservation.ownerPhone}` : ''} ` +
+          'if you have questions or want to book another time.',
+        'error'
+      );
+    } else {
+      showMessage(alert, '');
+    }
+    $('#tach-card').classList.toggle('hidden', cancelled);
+    $('#reminders-card').classList.toggle('hidden', cancelled);
+
     const status = $('#result-status');
     status.textContent = cancelled ? 'Cancelled' : 'Confirmed';
     status.className = `badge ${cancelled ? 'badge-bad' : 'badge-good'}`;

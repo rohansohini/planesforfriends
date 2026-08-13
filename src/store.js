@@ -398,6 +398,28 @@ function updateReservation(id, patch) {
   const status = patch.status !== undefined ? String(patch.status) : existing.status;
   if (!['confirmed', 'cancelled'].includes(status)) throw new HttpError(400, 'Unknown reservation status.');
 
+  const kind = patch.kind !== undefined ? (patch.kind === 'block' ? 'block' : 'rental') : existing.kind;
+
+  // Relabelling somebody's booking as blocked-off time would strand them: their
+  // confirmation ID would stop working with no explanation. Taking the time back
+  // is a real action (takeBackTime) that cancels the booking properly instead.
+  if (kind === 'block' && existing.kind === 'rental' && existing.renterName) {
+    throw new HttpError(
+      400,
+      `${existing.renterName} is booked on this time. Use “Take this time back” so the reservation is cancelled ` +
+        'and they can still look it up.'
+    );
+  }
+
+  if (kind === 'rental' && existing.kind === 'block') {
+    const name = patch.renterName !== undefined ? String(patch.renterName).trim() : existing.renterName;
+    const phone = patch.renterPhone !== undefined ? String(patch.renterPhone).trim() : existing.renterPhone;
+    const email = patch.renterEmail !== undefined ? String(patch.renterEmail).trim() : existing.renterEmail;
+    if (!name || !phone || !email) {
+      throw new HttpError(400, 'A rental needs a renter name, phone and email. Add those, or leave this as blocked-off time.');
+    }
+  }
+
   if (status === 'confirmed') {
     const conflicts = findConflicts({ planeId, start, end, excludeId: existing.id });
     if (conflicts.length) {
@@ -438,7 +460,7 @@ function updateReservation(id, patch) {
      WHERE id = ?`
   ).run(
     planeId,
-    patch.kind !== undefined ? (patch.kind === 'block' ? 'block' : 'rental') : existing.kind,
+    kind,
     patch.renterName !== undefined ? String(patch.renterName).trim() : existing.renterName,
     patch.renterPhone !== undefined ? String(patch.renterPhone).trim() : existing.renterPhone,
     patch.renterEmail !== undefined ? String(patch.renterEmail).trim() : existing.renterEmail,
@@ -466,7 +488,7 @@ function deleteReservation(id) {
 
 function logTachTime(confirmationId, tachTime) {
   const reservation = getReservationByConfirmation(confirmationId);
-  if (!reservation) throw new HttpError(404, 'We could not find that confirmation ID.');
+  if (!reservation || reservation.kind !== 'rental') throw new HttpError(404, 'We could not find that confirmation ID.');
   if (reservation.status !== 'confirmed') throw new HttpError(400, 'That reservation was cancelled.');
   const value = Number(tachTime);
   if (!Number.isFinite(value) || value < 0) throw new HttpError(400, 'Enter the tach time as a number, e.g. 3.4');
@@ -479,6 +501,38 @@ function logTachTime(confirmationId, tachTime) {
     reservation.id
   );
   return getReservation(reservation.id);
+}
+
+/**
+ * "I need my plane back that day." Cancels the renter's booking — so their
+ * confirmation ID keeps working and shows them it was cancelled — and blocks
+ * the same time off for the owner, in one step that cannot half-succeed.
+ */
+function takeBackTime(id, { notes = '' } = {}) {
+  const reservation = getReservation(id);
+  if (!reservation) throw new HttpError(404, 'Reservation not found.');
+  if (reservation.kind !== 'rental') throw new HttpError(400, 'That time is already blocked off.');
+  if (reservation.status !== 'confirmed') throw new HttpError(400, 'That reservation is already cancelled.');
+
+  db.exec('BEGIN');
+  try {
+    db.prepare("UPDATE reservations SET status = 'cancelled', updated_at = ? WHERE id = ?").run(Date.now(), reservation.id);
+    const block = createReservation(
+      {
+        planeId: reservation.planeId,
+        start: reservation.start,
+        end: reservation.end,
+        kind: 'block',
+        notes: notes || `Taken back from ${reservation.renterName || 'a renter'}`,
+      },
+      { asAdmin: true }
+    );
+    db.exec('COMMIT');
+    return { cancelled: getReservation(reservation.id), block };
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
 }
 
 /* ---------- availability (privacy-preserving) ---------- */
@@ -531,5 +585,6 @@ module.exports = {
   updateReservation,
   deleteReservation,
   logTachTime,
+  takeBackTime,
   busyWindows,
 };

@@ -427,9 +427,10 @@
     const modalMsg = el('div', { class: 'hidden' });
 
     const planeSelect = el('select', { id: 'm-plane' });
+    const hasRenter = !isNew && reservation.kind === 'rental' && !!reservation.renterName;
     const kindSelect = el(
       'select',
-      { id: 'm-kind' },
+      { id: 'm-kind', disabled: hasRenter || undefined },
       el('option', { value: 'rental', selected: kind === 'rental' || undefined }, 'Rental'),
       el('option', { value: 'block', selected: kind === 'block' || undefined }, 'Blocked / maintenance')
     );
@@ -475,7 +476,15 @@
     form.append(
       el('div', { class: 'field-row' },
         el('div', { class: 'field' }, el('label', { for: 'm-plane' }, 'Plane'), planeSelect),
-        el('div', { class: 'field' }, el('label', { for: 'm-kind' }, 'Type'), kindSelect)
+        el(
+          'div',
+          { class: 'field' },
+          el('label', { for: 'm-kind' }, 'Type'),
+          kindSelect,
+          hasRenter
+            ? el('p', { class: 'field-hint' }, 'Booked by a renter. To take this time for yourself, use the button below.')
+            : null
+        )
       ),
       el('div', { class: 'field-row' },
         el('div', { class: 'field' }, el('label', { for: 'm-start' }, 'Start'), startField),
@@ -515,9 +524,22 @@
     });
 
     const saveBtn = el('button', { type: 'submit' }, isNew ? 'Create' : 'Save changes');
+    const takeBackBtn =
+      hasRenter && reservation.status === 'confirmed'
+        ? el(
+            'button',
+            {
+              type: 'button',
+              class: 'secondary',
+              onclick: () => takeTimeBack(reservation, () => close(), afterSave, modalMsg),
+            },
+            'Take this time back'
+          )
+        : null;
     const footer = el(
       'div',
       { class: 'row', style: 'justify-content:flex-end;margin-top:1rem' },
+      takeBackBtn,
       !isNew
         ? el(
             'button',
@@ -581,6 +603,71 @@
     });
 
     const { close } = openModal(isNew ? (kind === 'block' ? 'Block off time' : 'Add reservation') : `Edit ${reservation.confirmationId}`, form);
+  }
+
+  /* One button for "I need my plane back that day": cancels the booking so the
+     renter still sees what happened, blocks the time off, and then puts their
+     phone number in front of the owner so the call actually gets made. */
+  async function takeTimeBack(reservation, closeEdit, afterSave, modalMsg) {
+    const when = formatRange(reservation.start, reservation.end);
+    const confirmed = window.confirm(
+      `Take back ${reservation.planeTail} on ${when}?\n\n` +
+        `• ${reservation.renterName}'s reservation is cancelled\n` +
+        '• the time is blocked off for you\n' +
+        `• they will see it as cancelled when they look up ${reservation.confirmationId}\n\n` +
+        'You should call them afterwards — the site does not send messages.'
+    );
+    if (!confirmed) return;
+    try {
+      const result = await api(`/api/admin/reservations/${reservation.id}/take-back`, { method: 'POST', body: {} });
+      closeEdit();
+      afterSave();
+      showCallReminder(result.cancelled);
+    } catch (err) {
+      showMessage(modalMsg, err.message);
+    }
+  }
+
+  function showCallReminder(reservation) {
+    const phone = reservation.renterPhone || '';
+    const digits = phone.replace(/[^0-9+]/g, '');
+    const body = el(
+      'div',
+      {},
+      el('p', { class: 'lead' }, `The time is blocked off and ${reservation.renterName || 'the renter'} is cancelled. Please let them know.`),
+      el(
+        'dl',
+        { class: 'detail-list' },
+        el('div', { class: 'detail-row' }, el('dt', {}, 'Renter'), el('dd', {}, reservation.renterName || '—')),
+        el(
+          'div',
+          { class: 'detail-row' },
+          el('dt', {}, 'Phone'),
+          el('dd', {}, digits ? el('a', { href: `tel:${digits}`, style: 'font-size:1.15rem;font-weight:700' }, phone) : '—')
+        ),
+        el(
+          'div',
+          { class: 'detail-row' },
+          el('dt', {}, 'Email'),
+          el(
+            'dd',
+            {},
+            reservation.renterEmail
+              ? el('a', { href: `mailto:${reservation.renterEmail}` }, reservation.renterEmail)
+              : '—'
+          )
+        ),
+        el('div', { class: 'detail-row' }, el('dt', {}, 'Was'), el('dd', {}, formatRange(reservation.start, reservation.end)))
+      )
+    );
+    const { close } = openModal('Call the renter', body);
+    body.append(
+      el(
+        'div',
+        { class: 'row', style: 'justify-content:flex-end;margin-top:1.25rem' },
+        el('button', { type: 'button', onclick: () => close() }, 'Done')
+      )
+    );
   }
 
   function openModal(title, content) {
