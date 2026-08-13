@@ -294,6 +294,50 @@ fine and the problem is outside it.
 
 # Later
 
+## What keeps it running
+
+Nothing here sleeps or expires the way a free web host does. The machine is a small Linux
+computer that runs continuously, and three things on it look after the site:
+
+| | Job | If it stops |
+| --- | --- | --- |
+| `planesforfriends` | serves the site | restarted automatically within 3 seconds |
+| `caddy` | HTTPS, and renewing the certificate every couple of months | restarted automatically |
+| `cron` | the nightly database backup at 3:15am | next night's backup runs as normal |
+
+All three are set to start on boot, so an Oracle maintenance reboot brings everything back with
+nobody watching. The certificate renews itself — there is no annual chore and no expiry date to
+diary.
+
+**The realistic ways it goes down**, in rough order of likelihood:
+
+1. **Oracle reclaims the machine** for being idle. The Pay As You Go upgrade is what protects
+   against this; see the box at the top.
+2. **Somebody stops the instance** in the Oracle console by accident. Start it again and
+   everything comes back on its own.
+3. **The DuckDNS name stops pointing at the machine.** This is the one part that is not
+   self-healing, and the fix is below.
+4. **The account lapses** — an expired card on a Pay As You Go account, say. Watch for Oracle's
+   emails.
+
+Nothing on that list loses your reservations. They are on the machine's disk, and copied nightly
+into `/var/lib/planesforfriends/backups/`.
+
+**Keep an eye on it for free**: make a monitor at [uptimerobot.com](https://uptimerobot.com)
+pointing at `https://rent-planes.duckdns.org/healthz` every 5 minutes, alerting your email. That
+turns "down since Tuesday and nobody said anything" into an email within five minutes.
+
+**Make the web address look after itself** (recommended). Sign in at duckdns.org, copy your
+**token** from the top of the page, and run:
+
+```bash
+cd planesforfriends && sudo bash deploy/duckdns-refresh.sh rent-planes <your-token>
+```
+
+That installs a weekly job that re-tells DuckDNS where the site lives. It costs nothing, and it
+means the name follows the site automatically if the machine is ever rebuilt on a different
+address — as well as settling any question of whether DuckDNS drops names nobody updates.
+
 ## Making changes later
 
 The site's code and the site's data live in two different folders, on purpose:

@@ -149,6 +149,7 @@ public/js/calendar.js  week calendar shared by the renter pages and the admin co
 scripts/seed.js      starting owners and planes
 scripts/backup.js    snapshot of the live database
 deploy/update.sh     back up, pull, reinstall, restart, verify
+deploy/duckdns-refresh.sh  weekly job keeping the free hostname pointed at the machine
 Dockerfile           for Fly.io or any container host
 render.yaml          Render blueprint, disk included
 ```
