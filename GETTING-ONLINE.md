@@ -310,7 +310,7 @@ first regardless.
 So when a change is ready, open the Cloud Shell and run:
 
 ```bash
-cd planesforfriends && bash deploy/update.sh
+cd planesforfriends && git pull && bash deploy/update.sh
 ```
 
 That backs up the database, fetches the new code, reinstalls, restarts, and checks the site
@@ -333,6 +333,11 @@ cd planesforfriends && git log --oneline -5      # find the version before
 git checkout <the id from that list>
 bash deploy/update.sh
 ```
+
+**`bash: deploy/update.sh: No such file or directory`** means your copy of the code predates that
+script — it arrived in an update you have not fetched yet. The `git pull` in the command above
+fixes it. If it persists, check you are in the right folder: `ls ~` should show
+`planesforfriends`.
 
 **Your data** is one file at `/var/lib/planesforfriends/planesforfriends.db`, and a copy is made
 every night at 3:15am into `/var/lib/planesforfriends/backups/`. Those copies are on the same

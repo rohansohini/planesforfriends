@@ -203,7 +203,7 @@ To restore, stop the site, copy a backup over `planesforfriends.db` (delete any 
 Render and Fly redeploy on push. On a VPS, from your checkout:
 
 ```bash
-cd ~/planesforfriends && bash deploy/update.sh
+cd ~/planesforfriends && git pull && bash deploy/update.sh
 ```
 
 That backs up the database, pulls, reinstalls, restarts, reuses the hostname already in the
