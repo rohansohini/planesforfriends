@@ -29,7 +29,9 @@ change it later at `/admin` under Settings.
 
 The whole system is one SQLite file. `npm run backup` takes a safe snapshot while the site is
 running; see **[DEPLOY.md](DEPLOY.md)** for putting it on the internet, which mostly comes down
-to picking a host that has a real disk.
+to picking a host that has a real disk. There are free options that do — on a fresh Ubuntu
+machine, `sudo bash deploy/install.sh yourname.duckdns.org` sets up the whole thing including
+HTTPS.
 
 ## Pages
 

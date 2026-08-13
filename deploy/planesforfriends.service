@@ -1,0 +1,24 @@
+[Unit]
+Description=Planes for Friends
+After=network.target
+
+[Service]
+User=pff
+Group=pff
+WorkingDirectory=/opt/planesforfriends
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=PFF_DATA_DIR=/var/lib/planesforfriends
+ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning server.js
+Restart=always
+RestartSec=3
+
+# The app only ever needs to read its own code and write its data directory.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/planesforfriends
+
+[Install]
+WantedBy=multi-user.target
