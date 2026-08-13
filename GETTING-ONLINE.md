@@ -75,6 +75,22 @@ Go to [oracle.com/cloud/free](https://www.oracle.com/cloud/free/) and sign up.
 
 When you land on a dashboard covered in boxes, you are through the hard part.
 
+**Before you do anything else, set a spending alarm.** Menu → **Billing & Cost Management** →
+**Budgets** → **Create Budget**, target your tenancy, amount **$1**, and add an alert rule that
+emails you at 100%. Nothing in this guide will ever trigger it — that is the point. If it does
+fire, something got created that is not free and you will know the same day instead of at the
+end of the month.
+
+**What could actually cost money**, if you upgrade to Pay As You Go later: not your renters. The
+free allowance is 2 micro machines, 200 GB of disk and **10 TB of outbound traffic a month**.
+This site is about 51 KB per visit, so 10 TB is roughly 210 million page views — you will use a
+rounding error of it. Ten years of bookings at 20 a week comes to about 38 MB of database
+against a 200 GB allowance.
+
+The way people get charged is by *creating* something outside the free set: a second machine on
+a shape without the **Always Free eligible** label, an oversized disk, a load balancer. So make
+the one machine in step 2, and then leave the console alone.
+
 ## 2. Create the machine (~5 min)
 
 In the menu (☰ top left): **Compute → Instances → Create instance**.
