@@ -5,18 +5,43 @@ both times you are copying and pasting a line I give you. You do not need to und
 
 ## First, pick one
 
-| | Time | Cost | What it feels like |
+| | Time | Cost | Catch |
 | --- | --- | --- | --- |
-| **A. Free cloud machine** (Oracle) | ~45 min | $0 forever | Fiddly signup, then two pasted commands |
-| **B. Paid, easiest** (Render) | ~10 min | ~$7/month | All clicking, no terminal at all |
-| **C. A computer you already own** | ~20 min | $0 | Easy, but the site is down when that computer is off |
+| **A. Free cloud machine** (Oracle) | ~45 min | $0 | Fiddly signup, and Oracle can reclaim an idle machine — see below |
+| **B. Paid, easiest** (Render) | ~10 min | ~$7/month | Costs money. Nothing else; no terminal, no maintenance |
+| **C. A computer you already own** | ~20 min | $0 | Down whenever that computer or your home internet is |
 
-If $7 a month is fine, **do B** — it is genuinely much simpler and you can skip most of this
-page. If you want free, **do A**; the walkthrough below is written for it.
+**If $7 a month is acceptable, do B.** It is much simpler and nothing can take it away while you
+are not looking. Do A if free is a firm requirement, and read the box below first — it is the
+one thing about Oracle you need to know before you build on it.
 
-One honest note on free options: Google's free VM now bills separately for its public internet
-address (roughly $3/month), so "free" there is not quite free. Oracle's still includes it. Free
-tiers change, so glance at your billing page after the first week either way.
+> ### Oracle can reclaim an idle machine
+>
+> Oracle's published policy: an Always Free instance counts as **idle** if, across a 7-day
+> window, its 95th-percentile CPU use is under 20%, network use is under 20%, and (on Ampere A1
+> shapes) memory use is under 20%. Idle instances **may be reclaimed**.
+>
+> Be clear-eyed: a plane rental site for two friends is idle by that definition almost all of
+> the time. This is a real risk, not a footnote. Three ways to handle it, best first:
+>
+> 1. **Upgrade the Oracle account to Pay As You Go.** Always Free resources stay free after you
+>    upgrade — you are only charged for anything beyond the free limits — and paid accounts are
+>    widely reported not to be subject to idle reclamation. The trade-off is that your card can
+>    now actually be charged if you create something outside the free limits, so create nothing
+>    else.
+> 2. **Keep good backups off the machine** (step 7 below). Reclamation takes the machine, not
+>    your saved file. With a backup on your laptop you are back online in about 15 minutes.
+> 3. **Accept it and check in occasionally.** If the site is a nice-to-have and a few days
+>    offline would only be annoying, this is fine.
+>
+> You may see advice to run a program that burns CPU around the clock to stay above the
+> threshold. It works, and it wastes a machine's worth of electricity forever to dodge a $7
+> bill. I would not.
+>
+> One more, on Google's free VM instead: it has no reclamation policy, but Google now bills
+> separately for the public internet address (roughly $3/month), so it is not actually free.
+
+Free tiers change. Glance at your billing page after the first week whichever you choose.
 
 ---
 
@@ -159,6 +184,12 @@ see *If something goes wrong* below.
 5. **Book a test flight yourself** on `/rent/vinod`, then look it up on `/lookup` and log a tach
    time. Five minutes, and it catches a wrong number before a renter does.
 6. Text the two links to your dad: `your-address/rent/vinod` and `your-address/rent/soney`.
+7. **Set up a free uptime alert.** Make an account at [uptimerobot.com](https://uptimerobot.com),
+   add a monitor pointing at `https://your-address/healthz` every 5 minutes, with your email as
+   the alert. It emails you if the site stops answering — which matters much more here than on a
+   paid host, because Oracle can reclaim the machine without telling you first. (It is a
+   watchman, not a defence: those pings are nowhere near enough traffic to make the machine look
+   busy.)
 
 ---
 
@@ -199,8 +230,9 @@ cd planesforfriends && git pull && sudo bash deploy/install.sh vinod-planes.duck
 
 **Your data** is one file at `/var/lib/planesforfriends/planesforfriends.db`, and a copy is made
 every night at 3:15am into `/var/lib/planesforfriends/backups/`. Those copies are on the same
-machine, which is fine for "I deleted something by mistake" and no help if the machine
-disappears. Once a month, download one to your laptop:
+machine, which is fine for "I deleted something by mistake" and **no help at all if Oracle takes
+the machine back**. On a free Oracle machine this is the difference between a 15-minute
+annoyance and losing every reservation, so do it: once a month, download one to your laptop:
 
 ```bash
 sudo cp /var/lib/planesforfriends/backups/*.db ~/ && ls ~/*.db
@@ -208,6 +240,21 @@ sudo cp /var/lib/planesforfriends/backups/*.db ~/ && ls ~/*.db
 
 Then use the Cloud Shell's download button on that file. It contains renters' names and phone
 numbers, so keep it somewhere private.
+
+**If the machine disappears** (Oracle reclamation, or you break something badly): build a new
+one with steps 2–5, point DuckDNS at the new IP address, then put your backup back:
+
+```bash
+# after uploading your saved .db file to the new machine
+sudo systemctl stop planesforfriends
+sudo cp planesforfriends-2026-08-13*.db /var/lib/planesforfriends/planesforfriends.db
+sudo rm -f /var/lib/planesforfriends/planesforfriends.db-wal /var/lib/planesforfriends/planesforfriends.db-shm
+sudo chown pff:pff /var/lib/planesforfriends/planesforfriends.db
+sudo systemctl start planesforfriends
+```
+
+Every reservation, tach reading and confirmation number comes back exactly as it was, including
+the admin password from that backup.
 
 **Moving to a real domain** later: buy the name, point its A record at the same Public IP, then
 re-run the install command with the new name. Nothing else changes.

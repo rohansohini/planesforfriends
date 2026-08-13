@@ -26,11 +26,18 @@ instances. (Free tiers do change; check the current terms before you rely on one
 | --- | --- | --- |
 | What you get | 1 VM, 1 GB RAM, 30 GB disk | up to 4 cores, 24 GB RAM, 200 GB disk |
 | Regions | us-west1, us-central1, us-east1 only | most |
-| Catch | small, 1 GB egress/month | ARM capacity is often unavailable; idle instances can be reclaimed |
+| Catch | public IPv4 is billed separately (~$3/month), so not truly free | idle instances can be reclaimed; ARM capacity often unavailable |
 
-Google's is smaller but more predictable; Oracle's is far more machine but you may have to
-retry for capacity, and Oracle reserves the right to reclaim always-free instances that sit
-idle for days. Keep backups off the box either way and neither catch is fatal.
+Neither is quite as free as it sounds. Google no longer includes the public internet address, so
+budget roughly $3/month there. Oracle still includes it, but publishes an idle-reclamation
+policy: an Always Free instance is deemed idle when, over 7 days, 95th-percentile CPU is under
+20%, network is under 20%, and (A1 shapes) memory is under 20% — and idle instances may be
+reclaimed. A rental site for two friends meets that definition nearly always.
+
+Mitigations, in order: upgrade the Oracle account to Pay As You Go (Always Free resources stay
+free, and paid accounts are widely reported to be exempt from reclamation); keep backups off the
+machine so a rebuild is 15 minutes; or pay for a host that has no such policy. Do not run a
+CPU-burning "keep busy" daemon — it works and it is a waste of a machine.
 
 **Then, on the machine:**
 
