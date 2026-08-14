@@ -44,12 +44,16 @@ function readBody(req) {
   });
 }
 
-async function sendFile(res, filePath, { cache = false } = {}) {
+async function sendFile(res, filePath) {
   const data = await fsp.readFile(filePath);
   res.writeHead(200, {
     'Content-Type': MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream',
     'Content-Length': data.length,
-    'Cache-Control': cache ? 'public, max-age=300' : 'no-cache',
+    // no-cache means "ask me if it changed", not "do not store". Browsers still
+    // get a cheap 304 for unchanged files, but an update shows up on the next
+    // reload instead of up to five minutes later, which otherwise looks like a
+    // failed deploy.
+    'Cache-Control': 'no-cache',
   });
   res.end(data);
 }
@@ -147,7 +151,7 @@ const server = http.createServer(async (req, res) => {
     // Static assets
     const filePath = safeStaticPath(pathname);
     if (filePath && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      await sendFile(res, filePath, { cache: true });
+      await sendFile(res, filePath);
       return;
     }
 
