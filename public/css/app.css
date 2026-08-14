@@ -1,6 +1,5 @@
-/* Planes for Friends — sized and coloured for easy reading.
-   Base type is 18px, controls are at least 48px tall, and every colour used for
-   text clears WCAG AA against its background. */
+/* Sized and coloured for easy reading: controls stay at least 48px tall and
+   every colour used for text clears WCAG AA against its background. */
 
 :root {
   --ink: #101f2c;
@@ -28,11 +27,15 @@
 
 * { box-sizing: border-box; }
 
+/* 16px base: a notch down from the 18px this started at, still comfortably
+   above what most sites use for body text. The Larger text button in the header
+   goes to 19px for anyone who wants the old size back. Everything else is sized
+   in rem, so both settings scale the whole page together. */
 html {
-  font-size: 18px;
+  font-size: 16px;
   -webkit-text-size-adjust: 100%;
 }
-html[data-text="large"] { font-size: 21px; }
+html[data-text="large"] { font-size: 19px; }
 
 body {
   margin: 0;
@@ -569,7 +572,6 @@ footer.site-footer {
 }
 
 @media (max-width: 640px) {
-  html { font-size: 17px; }
   h1 { font-size: 1.75rem; }
   .card { padding: 1.15rem; }
   .conf-code { font-size: 2rem; }

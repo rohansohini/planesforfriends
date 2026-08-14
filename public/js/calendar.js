@@ -12,7 +12,7 @@ function createWeekCalendar(options) {
     openHour = 5,
     closeHour = 24,
     slotMinutes = 30,
-    slotHeight = 34,
+    slotHeight = 31,
     allowPast = false,
     selectable = true,
     loadEvents = async () => [],
