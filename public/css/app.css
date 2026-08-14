@@ -269,7 +269,8 @@ a.picker-option .picker-title { color: var(--sky-dark); }
   margin-bottom: 0.85rem;
 }
 .cal-range { font-weight: 700; font-size: 1.15rem; }
-.cal-nav { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.cal-nav { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+.cal-jump { width: auto; min-width: 9.5rem; min-height: 2.9rem; padding: 0.35rem 0.6rem; }
 
 .cal-scroll {
   overflow: auto;
@@ -569,6 +570,19 @@ footer.site-footer {
   color: var(--ink-soft);
   font-size: 0.98rem;
   text-align: center;
+}
+
+/* Filter bars have too many controls to sit side by side on a phone; below this
+   width each one takes the full line rather than shrinking to a sliver. */
+@media (max-width: 760px) {
+  .row.filters { display: block; }
+  .row.filters > * { width: 100%; margin-bottom: 0.6rem; }
+  .row.filters > *:last-child { margin-bottom: 0; }
+  .row.filters .grow { flex: none; }
+  .cal-toolbar { display: block; }
+  .cal-toolbar .cal-range { margin-bottom: 0.6rem; }
+  .cal-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .cal-nav .cal-jump { grid-column: 1 / -1; width: 100%; }
 }
 
 @media (max-width: 640px) {

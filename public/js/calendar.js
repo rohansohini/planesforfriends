@@ -75,6 +75,18 @@ function createWeekCalendar(options) {
     'Later ›'
   );
 
+  // Paging a day at a time to reach next month is miserable on a phone, so let
+  // people say which date they want.
+  const dateJump = el('input', {
+    type: 'date',
+    class: 'cal-jump',
+    'aria-label': 'Jump to a date',
+    onchange: () => {
+      const ts = fromDateInput(dateJump.value);
+      if (ts != null) setWeek(ts);
+    },
+  });
+
   const headRow = el('div', { class: 'cal-headrow' });
   const bodyGrid = el('div', { class: 'cal-body' });
   const inner = el('div', { class: 'cal-inner' }, headRow, bodyGrid);
@@ -87,7 +99,12 @@ function createWeekCalendar(options) {
   );
 
   mount.append(
-    el('div', { class: 'cal-toolbar' }, rangeLabel, el('div', { class: 'cal-nav' }, prevBtn, todayBtn, nextBtn)),
+    el(
+      'div',
+      { class: 'cal-toolbar' },
+      rangeLabel,
+      el('div', { class: 'cal-nav' }, prevBtn, todayBtn, nextBtn, dateJump)
+    ),
     scroller,
     legend,
     footNote
@@ -194,6 +211,8 @@ function createWeekCalendar(options) {
         ? fmtDateLong.format(new Date(start))
         : `${fmtDate.format(new Date(start))} – ${fmtDate.format(new Date(addDays(start, state.dayCount - 1)))}`;
     todayBtn.textContent = state.dayCount === 7 ? 'This week' : 'Today';
+    dateJump.value = toDateInput(start);
+    if (!allowPast) dateJump.min = toDateInput(now);
     prevBtn.disabled = !allowPast && addDays(start, -1) < startOfDay(now);
 
     // header
@@ -285,15 +304,17 @@ function createWeekCalendar(options) {
         column.append(block);
       }
 
-      // past shading + "now" line
-      if (!allowPast || isSameDay(dayStart, now)) {
+      // Renters get past time greyed out because they cannot book it. Owners can,
+      // so shading it would only be in the way — they keep the "now" line alone.
+      if (!allowPast) {
         if (now >= bounds.to) {
           column.append(el('div', { class: 'cal-pastfill', style: `top:0;height:${dayHeight}px` }));
         } else if (now > bounds.from) {
-          const cut = offsetFor(now, dayStart, bounds);
-          column.append(el('div', { class: 'cal-pastfill', style: `top:0;height:${cut}px` }));
-          column.append(el('div', { class: 'cal-now', style: `top:${cut}px` }));
+          column.append(el('div', { class: 'cal-pastfill', style: `top:0;height:${offsetFor(now, dayStart, bounds)}px` }));
         }
+      }
+      if (isSameDay(dayStart, now) && now > bounds.from && now < bounds.to) {
+        column.append(el('div', { class: 'cal-now', style: `top:${offsetFor(now, dayStart, bounds)}px` }));
       }
 
       // selection

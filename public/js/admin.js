@@ -149,9 +149,10 @@
     return `${bits.join(' · ')} (${plane.ownerName})`;
   }
 
-  function planeOptions(select, { includeAll = false, selected = '', allLabel = 'All planes' } = {}) {
+  function planeOptions(select, { includeAll = false, selected = '', allLabel = 'All planes', placeholder = null } = {}) {
     select.replaceChildren();
     if (includeAll) select.append(el('option', { value: '' }, allLabel));
+    else if (placeholder) select.append(el('option', { value: '' }, placeholder));
     const byOwner = new Map();
     for (const plane of state.planes) {
       if (!byOwner.has(plane.ownerName)) byOwner.set(plane.ownerName, []);
@@ -519,8 +520,12 @@
       modalMsg
     );
 
+    // Adding from the all-planes view used to silently land on whichever plane
+    // sorted first, so bookings quietly attached to the wrong aircraft and never
+    // appeared where anyone expected. Make the choice explicit instead.
     planeOptions(planeSelect, {
-      selected: reservation ? reservation.planeId : prefill.planeId || (state.planes[0] && state.planes[0].id),
+      selected: reservation ? reservation.planeId : prefill.planeId || '',
+      placeholder: reservation || prefill.planeId ? null : 'Choose a plane…',
     });
 
     const saveBtn = el('button', { type: 'submit' }, isNew ? 'Create' : 'Save changes');
@@ -582,6 +587,7 @@
         status: statusSelect.value,
         tachTime: tachField.value === '' ? null : tachField.value,
       };
+      if (!planeSelect.value) return showMessage(modalMsg, 'Choose which plane this is for.');
       if (payload.start == null || payload.end == null) return showMessage(modalMsg, 'Enter a start and end time.');
       saveBtn.disabled = true;
       try {
