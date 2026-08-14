@@ -7,7 +7,7 @@ const path = require('node:path');
 
 const { handleApi } = require('./src/api');
 const { HttpError } = require('./src/store');
-const { DB_PATH, close: closeDatabase } = require('./src/db');
+const { DB_PATH, close: closeDatabase, getSetting } = require('./src/db');
 
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -52,6 +52,25 @@ async function sendFile(res, filePath, { cache = false } = {}) {
     'Cache-Control': cache ? 'public, max-age=300' : 'no-cache',
   });
   res.end(data);
+}
+
+const escapeHtml = (value) =>
+  String(value).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+/**
+ * Pages carry %SITE_TITLE% rather than a hard-coded name, filled in here. Doing
+ * it in the browser meant every page flashed the old name before the script
+ * swapped it — most visibly when clicking the logo.
+ */
+async function sendPage(res, fileName) {
+  const html = await fsp.readFile(path.join(PUBLIC_DIR, fileName), 'utf8');
+  const body = html.replaceAll('%SITE_TITLE%', escapeHtml(getSetting('site_title', 'Planes for Rent')));
+  res.writeHead(200, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Content-Length': Buffer.byteLength(body),
+    'Cache-Control': 'no-cache',
+  });
+  res.end(body);
 }
 
 function safeStaticPath(pathname) {
@@ -109,19 +128,19 @@ const server = http.createServer(async (req, res) => {
 
     // Page routes
     if (pathname === '/' || pathname === '/rent') {
-      await sendFile(res, path.join(PUBLIC_DIR, 'index.html'));
+      await sendPage(res, 'index.html');
       return;
     }
     if (/^\/rent\/[^/]+$/.test(pathname)) {
-      await sendFile(res, path.join(PUBLIC_DIR, 'rent.html'));
+      await sendPage(res, 'rent.html');
       return;
     }
     if (pathname === '/lookup' || pathname === '/tach') {
-      await sendFile(res, path.join(PUBLIC_DIR, 'lookup.html'));
+      await sendPage(res, 'lookup.html');
       return;
     }
     if (pathname === '/admin') {
-      await sendFile(res, path.join(PUBLIC_DIR, 'admin.html'));
+      await sendPage(res, 'admin.html');
       return;
     }
 

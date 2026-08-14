@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS owners (
   name        TEXT    NOT NULL,
   phone       TEXT    NOT NULL DEFAULT '',
   email       TEXT    NOT NULL DEFAULT '',
+  manager_id  INTEGER REFERENCES owners(id) ON DELETE SET NULL,
   active      INTEGER NOT NULL DEFAULT 1,
   created_at  INTEGER NOT NULL
 );
@@ -83,6 +84,7 @@ function addColumnIfMissing(table, column, definition) {
 addColumnIfMissing('reservations', 'paid', 'INTEGER NOT NULL DEFAULT 0');
 addColumnIfMissing('reservations', 'paid_at', 'INTEGER');
 addColumnIfMissing('reservations', 'admin_notes', "TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('owners', 'manager_id', 'INTEGER REFERENCES owners(id) ON DELETE SET NULL');
 
 /* ---------- password hashing (scrypt, no external deps) ---------- */
 
@@ -115,7 +117,7 @@ const DEFAULT_SETTINGS = {
   open_hour: '5',
   close_hour: '24',
   max_days_ahead: '180',
-  site_title: 'Planes for Friends',
+  site_title: 'Planes for Rent',
 };
 
 function getSetting(key, fallback = null) {
@@ -192,6 +194,11 @@ function bootstrap() {
       setSetting('close_hour', DEFAULT_SETTINGS.close_hour);
     }
     setSetting('calendar_hours_v2', 'done');
+  }
+  // The site used to be called Planes for Friends. Rename databases still
+  // carrying that as their title, but never overwrite a name someone chose.
+  if (getSetting('site_title') === 'Planes for Friends') {
+    setSetting('site_title', DEFAULT_SETTINGS.site_title);
   }
 }
 

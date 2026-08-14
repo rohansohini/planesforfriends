@@ -27,12 +27,13 @@
       state.owner = data.owner;
       state.planes = data.planes;
 
-      if (config.siteTitle) $('#site-title').textContent = config.siteTitle;
-      document.title = `Rent from ${data.owner.name} · ${config.siteTitle || 'Planes for Friends'}`;
+      document.title = `Rent from ${data.owner.name} · ${config.siteTitle}`;
       $('#owner-heading').textContent = `Rent from ${data.owner.name}`;
-      $('#owner-sub').textContent = data.owner.phone
-        ? `Call ${data.owner.name} at ${data.owner.phone} about pricing. Book your time below.`
-        : `Contact ${data.owner.name} about pricing. Book your time below.`;
+      // The contact is the manager when this owner has one, so a renter never
+      // gets pointed at somebody who does not handle the renting.
+      $('#owner-sub').textContent = data.owner.contactPhone
+        ? `Call ${data.owner.contactName} at ${data.owner.contactPhone} about renting. Book your time below.`
+        : `Contact ${data.owner.contactName} about renting. Book your time below.`;
 
       renderPlanePicker();
       setupCalendar();

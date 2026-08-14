@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin · Planes for Friends</title>
+<title>Admin · %SITE_TITLE%</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='19' font-size='20'>✈️</text></svg>">
@@ -14,7 +14,7 @@
   <div class="wrap bar">
     <a class="brand" href="/">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21l20-9L2 3v7l14 2-14 2z"/></svg>
-      <span id="site-title">Planes for Friends</span>
+      <span id="site-title">%SITE_TITLE%</span>
     </a>
     <nav>
       <a href="/">Home</a>
@@ -220,6 +220,20 @@
               <input id="owner-slug" placeholder="vinod">
             </div>
           </div>
+          <div class="field">
+            <label class="check-line" for="owner-managed">
+              <input type="checkbox" id="owner-managed" class="paid-box">
+              Somebody else handles their renting
+            </label>
+            <div id="owner-manager-wrap" class="hidden">
+              <label for="owner-manager">Who renters should contact</label>
+              <select id="owner-manager"></select>
+              <p class="field-hint">
+                Renters see this person's name and number instead of the owner's — on the owner's
+                page, on the confirmation, and when looking a booking up.
+              </p>
+            </div>
+          </div>
           <div id="owner-msg" class="hidden"></div>
           <button type="submit">Add owner</button>
         </form>
@@ -230,7 +244,7 @@
         <div class="table-scroll">
           <table>
             <thead>
-              <tr><th>Name</th><th>Page</th><th>Phone</th><th>Email</th><th>Planes</th><th>Listed</th><th></th></tr>
+              <tr><th>Name</th><th>Page</th><th>Renters contact</th><th>Email</th><th>Planes</th><th>Listed</th><th></th></tr>
             </thead>
             <tbody id="owners-body"></tbody>
           </table>
@@ -306,7 +320,7 @@
 <div id="modal-root"></div>
 
 <footer class="site-footer">
-  <div class="wrap">Planes for Friends · admin</div>
+  <div class="wrap">%SITE_TITLE% · admin</div>
 </footer>
 
 <script src="/js/common.js"></script>

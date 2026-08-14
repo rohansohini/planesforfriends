@@ -54,7 +54,6 @@
     state.owners = data.owners;
     state.planes = data.planes;
     state.settings = data.settings;
-    if (state.settings.siteTitle) $('#site-title').textContent = state.settings.siteTitle;
     renderPlaneSelects();
     renderPlanes();
     renderOwners();
@@ -176,6 +175,7 @@
   }
 
   function renderPlaneSelects() {
+    managerOptions($('#owner-manager'), { selected: $('#owner-manager').value });
     planeOptions($('#filter-plane'), { includeAll: true, selected: state.filters.planeId });
     planeOptions($('#cal-plane'), { includeAll: true, allLabel: 'All planes together', selected: $('#cal-plane').value });
     const ownerSelect = $('#plane-owner');
@@ -838,7 +838,14 @@
           {},
           el('td', {}, owner.name),
           el('td', {}, el('a', { href: `/rent/${owner.slug}`, target: '_blank', class: 'mono tiny' }, `/rent/${owner.slug}`)),
-          el('td', {}, owner.phone || '—'),
+          el(
+            'td',
+            {},
+            el('div', {}, owner.contactPhone || '—'),
+            owner.managerName
+              ? el('div', { class: 'tiny muted' }, `via ${owner.managerName}`)
+              : null
+          ),
           el('td', { class: 'tiny' }, owner.email || '—'),
           el('td', {}, String(planeCount)),
           el('td', {}, el('span', { class: `badge ${owner.active ? 'badge-good' : 'badge-grey'}` }, owner.active ? 'Live' : 'Hidden')),
@@ -852,6 +859,23 @@
     }
   }
 
+  $('#owner-managed').addEventListener('change', () => {
+    $('#owner-manager-wrap').classList.toggle('hidden', !$('#owner-managed').checked);
+  });
+
+  function managerOptions(select, { selected = null, excludeId = null } = {}) {
+    // Only people who are not themselves managed can manage somebody, which
+    // keeps "who do I call" one hop away at most.
+    const eligible = state.owners.filter((o) => o.id !== excludeId && !o.managerId);
+    select.replaceChildren(
+      el('option', { value: '' }, eligible.length ? 'Choose a person…' : 'Nobody available yet'),
+      ...eligible.map((o) =>
+        el('option', { value: String(o.id), selected: String(o.id) === String(selected) || undefined }, o.name)
+      )
+    );
+    if (selected) select.value = String(selected);
+  }
+
   $('#owner-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     showMessage($('#owner-msg'), '');
@@ -863,9 +887,11 @@
           phone: $('#owner-phone').value,
           email: $('#owner-email').value,
           slug: $('#owner-slug').value,
+          managerId: $('#owner-managed').checked ? $('#owner-manager').value || null : null,
         },
       });
       $('#owner-form').reset();
+      $('#owner-manager-wrap').classList.add('hidden');
       showMessage($('#owner-msg'), `Added ${owner.name}. Their page is live at /rent/${owner.slug}.`, 'ok');
       await reloadAll();
     } catch (err) {
@@ -884,6 +910,21 @@
       el('option', { value: 'yes', selected: owner.active || undefined }, 'Live on the site'),
       el('option', { value: 'no', selected: !owner.active || undefined }, 'Hidden')
     );
+    const managerSelect = el('select', {});
+    managerOptions(managerSelect, { selected: owner.managerId, excludeId: owner.id });
+    const managedBox = el('input', {
+      type: 'checkbox',
+      class: 'paid-box',
+      checked: !!owner.managerId || undefined,
+    });
+    const managerWrap = el(
+      'div',
+      { class: owner.managerId ? '' : 'hidden' },
+      el('label', {}, 'Who renters should contact'),
+      managerSelect,
+      el('p', { class: 'field-hint' }, 'Renters see this person instead of the owner, everywhere.')
+    );
+    managedBox.addEventListener('change', () => managerWrap.classList.toggle('hidden', !managedBox.checked));
 
     form.append(
       el('div', { class: 'field-row' },
@@ -893,6 +934,12 @@
       el('div', { class: 'field-row' },
         el('div', { class: 'field' }, el('label', {}, 'Phone'), phone),
         el('div', { class: 'field' }, el('label', {}, 'Email'), email)
+      ),
+      el(
+        'div',
+        { class: 'field' },
+        el('label', { class: 'check-line' }, managedBox, 'Somebody else handles their renting'),
+        managerWrap
       ),
       el('div', { class: 'field' }, el('label', {}, 'Visibility'), active),
       modalMsg
@@ -932,6 +979,7 @@
             slug: slug.value,
             phone: phone.value,
             email: email.value,
+            managerId: managedBox.checked ? managerSelect.value || null : null,
             active: active.value === 'yes',
           },
         });
@@ -972,7 +1020,7 @@
       await api('/api/admin/settings', {
         method: 'PATCH',
         body: {
-          site_title: $('#set-site-title').value.trim() || 'Planes for Friends',
+          site_title: $('#set-site-title').value.trim() || 'Planes for Rent',
           timezone: $('#set-tz').value.trim() || 'America/Chicago',
           ops_contact_name: $('#set-ops-name').value.trim(),
           ops_contact_phone: $('#set-ops-phone').value.trim(),

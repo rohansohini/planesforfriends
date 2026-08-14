@@ -55,39 +55,87 @@ const bool = (v) => (v ? 1 : 0);
 
 function listOwners({ includeInactive = false } = {}) {
   const sql = includeInactive
-    ? 'SELECT * FROM owners ORDER BY name COLLATE NOCASE'
-    : 'SELECT * FROM owners WHERE active = 1 ORDER BY name COLLATE NOCASE';
+    ? `${OWNER_SELECT} ORDER BY o.name COLLATE NOCASE`
+    : `${OWNER_SELECT} WHERE o.active = 1 ORDER BY o.name COLLATE NOCASE`;
   return db.prepare(sql).all().map(mapOwner);
 }
 
 function mapOwner(row) {
   if (!row) return null;
+  // contactName/contactPhone are who a renter should call: the manager when one
+  // is set, otherwise the owner. Everything renter-facing uses these.
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
     phone: row.phone,
     email: row.email,
+    managerId: row.manager_id ?? null,
+    managerName: row.manager_name ?? null,
+    managerPhone: row.manager_phone ?? null,
+    contactName: row.manager_name || row.name,
+    contactPhone: row.manager_name ? row.manager_phone : row.phone,
     active: !!row.active,
     createdAt: row.created_at,
   };
 }
 
+const OWNER_SELECT = `
+  SELECT o.*, m.name AS manager_name, m.phone AS manager_phone
+  FROM owners o LEFT JOIN owners m ON m.id = o.manager_id
+`;
+
+/**
+ * Managers are one level deep on purpose: Soney handles Vinod's rentals, and
+ * that is the whole idea. Chains would raise questions nobody wants to answer,
+ * like whose number goes on the confirmation three hops up.
+ */
+function validateManager(ownerId, managerId) {
+  if (managerId == null || managerId === '') return null;
+  const id = Number(managerId);
+  if (!Number.isFinite(id)) throw new HttpError(400, 'Pick a valid manager.');
+  if (ownerId != null && id === Number(ownerId)) {
+    throw new HttpError(400, 'Somebody cannot manage their own rentals — leave the manager empty instead.');
+  }
+  const manager = db.prepare('SELECT id, name, manager_id FROM owners WHERE id = ?').get(id);
+  if (!manager) throw new HttpError(400, 'Pick a valid manager.');
+  if (manager.manager_id != null) {
+    throw new HttpError(
+      400,
+      `${manager.name}'s own rentals are handled by somebody else, so ${manager.name} cannot manage anyone.`
+    );
+  }
+  if (ownerId != null) {
+    const managed = db.prepare('SELECT name FROM owners WHERE manager_id = ?').get(Number(ownerId));
+    if (managed) {
+      throw new HttpError(
+        400,
+        `This person manages ${managed.name}'s rentals, so they cannot be managed by someone else. ` +
+          'Clear that first if you want to swap them round.'
+      );
+    }
+  }
+  return id;
+}
+
 function getOwnerBySlug(slug) {
-  return mapOwner(db.prepare('SELECT * FROM owners WHERE slug = ?').get(String(slug || '').toLowerCase()));
+  return mapOwner(db.prepare(`${OWNER_SELECT} WHERE o.slug = ?`).get(String(slug || '').toLowerCase()));
 }
 
 function getOwner(id) {
-  return mapOwner(db.prepare('SELECT * FROM owners WHERE id = ?').get(Number(id)));
+  return mapOwner(db.prepare(`${OWNER_SELECT} WHERE o.id = ?`).get(Number(id)));
 }
 
-function createOwner({ name, phone = '', email = '', slug = '' }) {
+function createOwner({ name, phone = '', email = '', slug = '', managerId = null }) {
   const finalName = String(name || '').trim();
   if (!finalName) throw new HttpError(400, 'Owner name is required.');
   const finalSlug = uniqueSlug(slug || finalName);
+  const manager = validateManager(null, managerId);
   const info = db
-    .prepare('INSERT INTO owners (slug, name, phone, email, active, created_at) VALUES (?, ?, ?, ?, 1, ?)')
-    .run(finalSlug, finalName, String(phone || '').trim(), String(email || '').trim(), Date.now());
+    .prepare(
+      'INSERT INTO owners (slug, name, phone, email, manager_id, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)'
+    )
+    .run(finalSlug, finalName, String(phone || '').trim(), String(email || '').trim(), manager, Date.now());
   return getOwner(info.lastInsertRowid);
 }
 
@@ -97,11 +145,16 @@ function updateOwner(id, patch) {
   const name = patch.name !== undefined ? String(patch.name).trim() : owner.name;
   if (!name) throw new HttpError(400, 'Owner name cannot be empty.');
   const slug = patch.slug !== undefined ? uniqueSlug(patch.slug || name, owner.id) : owner.slug;
-  db.prepare('UPDATE owners SET name = ?, slug = ?, phone = ?, email = ?, active = ? WHERE id = ?').run(
+  const manager =
+    patch.managerId !== undefined ? validateManager(owner.id, patch.managerId) : owner.managerId;
+  db.prepare(
+    'UPDATE owners SET name = ?, slug = ?, phone = ?, email = ?, manager_id = ?, active = ? WHERE id = ?'
+  ).run(
     name,
     slug,
     patch.phone !== undefined ? String(patch.phone).trim() : owner.phone,
     patch.email !== undefined ? String(patch.email).trim() : owner.email,
+    manager,
     patch.active !== undefined ? bool(patch.active) : bool(owner.active),
     owner.id
   );
@@ -111,6 +164,13 @@ function updateOwner(id, patch) {
 function deleteOwner(id) {
   const owner = getOwner(id);
   if (!owner) throw new HttpError(404, 'Owner not found.');
+  const managed = db.prepare('SELECT name FROM owners WHERE manager_id = ?').get(owner.id);
+  if (managed) {
+    throw new HttpError(
+      400,
+      `${owner.name} manages ${managed.name}'s rentals. Change that first, or renters would have nobody to call.`
+    );
+  }
   const planes = db.prepare('SELECT COUNT(*) AS n FROM planes WHERE owner_id = ?').get(owner.id).n;
   if (planes > 0) {
     throw new HttpError(400, `${owner.name} still has ${planes} plane(s). Reassign or delete those first.`);
@@ -229,6 +289,8 @@ function mapReservation(row) {
     ownerName: row.owner_name ?? undefined,
     ownerSlug: row.owner_slug ?? undefined,
     ownerPhone: row.owner_phone ?? undefined,
+    contactName: row.manager_name || row.owner_name,
+    contactPhone: row.manager_name ? row.manager_phone : row.owner_phone,
     kind: row.kind,
     renterName: row.renter_name,
     renterPhone: row.renter_phone,
@@ -249,10 +311,12 @@ function mapReservation(row) {
 
 const RES_SELECT = `
   SELECT r.*, p.tail_number, p.model, p.nickname, p.owner_id,
-         o.name AS owner_name, o.slug AS owner_slug, o.phone AS owner_phone
+         o.name AS owner_name, o.slug AS owner_slug, o.phone AS owner_phone,
+         m.name AS manager_name, m.phone AS manager_phone
   FROM reservations r
   JOIN planes p ON p.id = r.plane_id
   JOIN owners o ON o.id = p.owner_id
+  LEFT JOIN owners m ON m.id = o.manager_id
 `;
 
 function getReservation(id) {

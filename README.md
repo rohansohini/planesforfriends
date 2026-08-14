@@ -65,13 +65,13 @@ a small screen sideways to find Thursday.
    of booking, so two people clicking at once cannot double-book.
 4. **Get a confirmation ID** like `PFF-7K3QD2`, shown on screen along with the four
    pre-flight instructions:
-   1. Contact *the owner* at *their number* for pricing.
+   1. Contact *the owner, or their manager* at *that number* about renting.
    2. Treat the plane as if it was your own.
    3. Top off the gas once you are finished.
    4. Contact *Soney* at *Soney's number* if there are any problems.
 
-   The owner's name and number come from the plane's owner; the problems contact is a site
-   setting (Admin → Settings), so it changes in one place.
+   The name and number are the plane owner's, or their manager's if one is set; the problems
+   contact is a site setting (Admin → Settings), so it changes in one place.
 5. **After flying**, `/lookup` takes the confirmation ID and accepts a tach time — a single
    logged number, editable afterwards.
 
@@ -116,8 +116,14 @@ Sign in at `/admin` with the shared password.
 - **Planes** — add a plane, assign it to an owner, edit tail number/model/nickname/renter notes,
   hide it from the site without deleting, or delete it outright. Adding a plane puts it on that
   owner's page immediately.
-- **Owners** — add anyone to rent from, which creates their `/rent/<name>` page. Their phone
-  number is what renters see for pricing. Owners can be hidden without being deleted.
+- **Owners** — add anyone to rent from, which creates their `/rent/<name>` page. Owners can be
+  hidden without being deleted.
+  - **Somebody else handles their renting** ticks a manager onto an owner, chosen from the other
+    owners. Renters then see the manager's name and number everywhere — the owner's page, the
+    confirmation instructions, the lookup — while the plane stays recorded as the owner's. Soney
+    fielding calls for Vinod's plane is the case this exists for. Managers are one level deep:
+    somebody who is managed cannot manage, and a manager cannot be deleted while they still
+    cover for someone.
 - **Settings** — site title, the "problems" contact name and number, the export time zone, the
   hours the calendar shows (5am–midnight by default), how far ahead renters can book, and the
   admin password.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Planes for Friends</title>
+<title>%SITE_TITLE%</title>
 <meta name="description" content="Rent a plane from Vinod, Soney and friends. No account needed.">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='19' font-size='20'>✈️</text></svg>">
@@ -14,7 +14,7 @@
   <div class="wrap bar">
     <a class="brand" href="/">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21l20-9L2 3v7l14 2-14 2z"/></svg>
-      <span id="site-title">Planes for Friends</span>
+      <span id="site-title">%SITE_TITLE%</span>
     </a>
     <nav>
       <a href="/">Home</a>
@@ -58,7 +58,7 @@
 </main>
 
 <footer class="site-footer">
-  <div class="wrap">Planes for Friends · fly safe, top off the gas.</div>
+  <div class="wrap">%SITE_TITLE% · fly safe, top off the gas.</div>
 </footer>
 
 <script src="/js/common.js"></script>
@@ -67,10 +67,6 @@
   const list = $('#owners');
   try {
     const [config, owners] = await Promise.all([api('/api/config'), api('/api/owners')]);
-    if (config.siteTitle) {
-      document.title = config.siteTitle;
-      $('#site-title').textContent = config.siteTitle;
-    }
     list.replaceChildren();
     if (!owners.length) {
       list.append(el('p', { class: 'muted' }, 'No planes are listed yet. Check back soon.'));
@@ -87,7 +83,7 @@
             { class: 'picker-meta' },
             `${owner.planeCount} plane${owner.planeCount === 1 ? '' : 's'} to rent`
           ),
-          owner.phone ? el('div', { class: 'picker-meta' }, owner.phone) : null,
+          owner.contactPhone ? el('div', { class: 'picker-meta' }, owner.contactPhone) : null,
           el('span', { class: 'picker-go' }, 'See the planes →')
         )
       );

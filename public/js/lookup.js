@@ -6,12 +6,6 @@
   const input = $('#conf-input');
   let current = null;
 
-  api('/api/config')
-    .then((config) => {
-      if (config.siteTitle) $('#site-title').textContent = config.siteTitle;
-    })
-    .catch(() => {});
-
   $('#lookup-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     await lookup(input.value);
@@ -77,7 +71,7 @@
       showMessage(
         alert,
         `This reservation was cancelled. The plane is not being held for you. ` +
-          `Please call ${reservation.ownerName}${reservation.ownerPhone ? ` at ${reservation.ownerPhone}` : ''} ` +
+          `Please call ${reservation.contactName}${reservation.contactPhone ? ` at ${reservation.contactPhone}` : ''} ` +
           'if you have questions or want to book another time.',
         'error'
       );
@@ -96,7 +90,8 @@
     details.replaceChildren();
     const rows = [
       ['Plane', [reservation.planeTail, reservation.planeNickname, reservation.planeModel].filter(Boolean).join(' · ')],
-      ['Owner', `${reservation.ownerName}${reservation.ownerPhone ? ` · ${reservation.ownerPhone}` : ''}`],
+      ['Owner', reservation.ownerName],
+      ['Who to call', `${reservation.contactName}${reservation.contactPhone ? ` · ${reservation.contactPhone}` : ''}`],
       ['When', formatRange(reservation.start, reservation.end)],
       ['How long', durationLabel(reservation.start, reservation.end)],
       ['Renter', reservation.renterName],

@@ -10,10 +10,11 @@ const auth = require('./auth');
 function instructionsFor(reservation) {
   const opsName = getSetting('ops_contact_name', 'Soney');
   const opsPhone = getSetting('ops_contact_phone', '');
-  const ownerName = reservation.ownerName || 'the owner';
-  const ownerPhone = reservation.ownerPhone || 'the number on file';
+  // Whoever handles this owner's rentals — the manager if there is one.
+  const ownerName = reservation.contactName || reservation.ownerName || 'the owner';
+  const ownerPhone = reservation.contactPhone || reservation.ownerPhone || 'the number on file';
   return [
-    `Contact ${ownerName} at ${ownerPhone} for pricing.`,
+    `Contact ${ownerName} at ${ownerPhone} about renting.`,
     'Treat the plane as if it was your own.',
     'Top off the gas once you are finished.',
     `Contact ${opsName} at ${opsPhone} if there are any problems.`,
@@ -124,7 +125,8 @@ function renterView(r) {
     planeModel: r.planeModel,
     planeNickname: r.planeNickname,
     ownerName: r.ownerName,
-    ownerPhone: r.ownerPhone,
+    contactName: r.contactName,
+    contactPhone: r.contactPhone,
     ownerSlug: r.ownerSlug,
     renterName: r.renterName,
     renterPhone: r.renterPhone,
@@ -169,7 +171,9 @@ async function handleApi(req, res, ctx) {
       owners.map((o) => ({
         slug: o.slug,
         name: o.name,
-        phone: o.phone,
+        contactName: o.contactName,
+        contactPhone: o.contactPhone,
+        managed: !!o.managerId,
         planeCount: store.listPlanes({ ownerId: o.id }).length,
       }))
     );
@@ -180,7 +184,13 @@ async function handleApi(req, res, ctx) {
     const owner = store.getOwnerBySlug(ownerMatch[1]);
     if (!owner || !owner.active) throw new HttpError(404, 'We could not find that page.');
     return send(200, {
-      owner: { slug: owner.slug, name: owner.name, phone: owner.phone },
+      owner: {
+        slug: owner.slug,
+        name: owner.name,
+        contactName: owner.contactName,
+        contactPhone: owner.contactPhone,
+        managed: !!owner.managerId,
+      },
       planes: store.listPlanes({ ownerId: owner.id }).map(publicPlane),
     });
   }
