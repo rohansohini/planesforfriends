@@ -159,6 +159,18 @@ input, select, textarea {
   background: #fff;
   color: var(--ink);
 }
+/* Safari on iOS sizes date fields from their content and ignores width:100%,
+   so inside a flex or grid parent they can spill past the card edge. Turning off
+   the native appearance and allowing them to shrink keeps them in their box. */
+input[type="date"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+}
+.row > *, .cal-nav > *, .field-row > * { min-width: 0; }
+
 input::placeholder, textarea::placeholder { color: #7b8ea0; }
 input:focus, select:focus, textarea:focus { border-color: var(--sky); }
 textarea { min-height: 5rem; resize: vertical; }
