@@ -107,7 +107,7 @@
           start: r.start,
           end: r.end,
           title: r.kind === 'block' ? 'Blocked off' : r.renterName || 'Reservation',
-          subtitle: [r.planeTail, r.paid ? 'paid' : null, r.tachTime != null ? `tach ${r.tachTime}` : null]
+          subtitle: [r.planeTail, r.paid ? 'paid' : null, r.hobbsTime != null ? `hobbs ${r.hobbsTime}` : null]
             .filter(Boolean)
             .join(' · '),
           tone:
@@ -223,10 +223,10 @@
     const scope = plane ? `${plane.tailNumber} (${plane.ownerName})` : 'all planes';
     const rentals = state.reservations.filter((r) => r.kind === 'rental' && r.status === 'confirmed');
     const unpaid = rentals.filter((r) => !r.paid).length;
-    const hours = rentals.reduce((sum, r) => sum + (r.tachTime || 0), 0);
+    const hours = rentals.reduce((sum, r) => sum + (r.hobbsTime || 0), 0);
     $('#filter-hint').textContent =
       `Showing ${state.reservations.length} record${state.reservations.length === 1 ? '' : 's'} for ${scope} · ` +
-      `${unpaid} unpaid · ${hours.toFixed(1)} tach hours logged. The CSV download uses these same filters.`;
+      `${unpaid} unpaid · ${hours.toFixed(1)} Hobbs hours logged. The CSV download uses these same filters.`;
   }
 
   $('#filter-paid').addEventListener('change', () => {
@@ -293,7 +293,7 @@
             isBlock ? null : el('div', { class: 'tiny muted' }, r.renterEmail || ''),
             r.notes ? el('div', { class: 'tiny muted' }, `“${r.notes}”`) : null
           ),
-          el('td', {}, tachCell(r)),
+          el('td', {}, hobbsCell(r)),
           el('td', { class: 'center' }, paidCell(r)),
           el('td', {}, adminNotesCell(r))
         )
@@ -380,32 +380,32 @@
     return input;
   }
 
-  /* Tach time is the field owners touch most, so it edits in place: type a
+  /* Hobbs time is the field owners touch most, so it edits in place: type a
      number, tab away, saved. Everything else lives in the edit modal. */
-  function tachCell(reservation) {
+  function hobbsCell(reservation) {
     const input = el('input', {
       type: 'number',
       step: '0.1',
       min: '0',
-      class: 'tach-inline',
+      class: 'hobbs-inline',
       placeholder: '—',
-      title: 'Tach time — type a number and tab away to save',
-      value: reservation.tachTime == null ? '' : String(reservation.tachTime),
+      title: 'Hobbs time — type a number and tab away to save',
+      value: reservation.hobbsTime == null ? '' : String(reservation.hobbsTime),
     });
     let last = input.value;
     input.addEventListener('change', async () => {
       if (input.value === last) return;
       const updated = await patchField(
         reservation,
-        { tachTime: input.value === '' ? null : input.value },
+        { hobbsTime: input.value === '' ? null : input.value },
         input,
         () => {
           input.value = last;
         },
-        `Tach time saved for ${reservation.confirmationId}.`
+        `Hobbs time saved for ${reservation.confirmationId}.`
       );
       if (updated) {
-        last = updated.tachTime == null ? '' : String(updated.tachTime);
+        last = updated.hobbsTime == null ? '' : String(updated.hobbsTime);
         input.value = last;
       }
     });
@@ -458,12 +458,12 @@
     const nameField = el('input', { id: 'm-name', value: reservation ? reservation.renterName : '' });
     const phoneField = el('input', { id: 'm-phone', type: 'tel', value: reservation ? reservation.renterPhone : '' });
     const emailField = el('input', { id: 'm-email', type: 'email', value: reservation ? reservation.renterEmail : '' });
-    const tachField = el('input', {
-      id: 'm-tach',
+    const hobbsField = el('input', {
+      id: 'm-hobbs',
       type: 'number',
       step: '0.1',
       min: '0',
-      value: reservation && reservation.tachTime != null ? String(reservation.tachTime) : '',
+      value: reservation && reservation.hobbsTime != null ? String(reservation.hobbsTime) : '',
     });
     const notesField = el('textarea', { id: 'm-notes' }, reservation ? reservation.notes : '');
     const adminNotesField = el('textarea', { id: 'm-admin-notes' }, reservation ? reservation.adminNotes : '');
@@ -497,7 +497,7 @@
       ),
       el('div', { class: 'field-row' },
         el('div', { class: 'field' }, el('label', { for: 'm-email' }, 'Email'), emailField),
-        el('div', { class: 'field' }, el('label', { for: 'm-tach' }, 'Tach time'), tachField)
+        el('div', { class: 'field' }, el('label', { for: 'm-hobbs' }, 'Hobbs time'), hobbsField)
       ),
       el('div', { class: 'field-row' },
         el('div', { class: 'field' }, el('label', { for: 'm-status' }, 'Status'), statusSelect),
@@ -585,7 +585,7 @@
         adminNotes: adminNotesField.value.trim(),
         paid: paidField.checked,
         status: statusSelect.value,
-        tachTime: tachField.value === '' ? null : tachField.value,
+        hobbsTime: hobbsField.value === '' ? null : hobbsField.value,
       };
       if (!planeSelect.value) return showMessage(modalMsg, 'Choose which plane this is for.');
       if (payload.start == null || payload.end == null) return showMessage(modalMsg, 'Enter a start and end time.');

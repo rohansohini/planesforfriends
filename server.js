@@ -139,7 +139,7 @@ const server = http.createServer(async (req, res) => {
       await sendPage(res, 'rent.html');
       return;
     }
-    if (pathname === '/lookup' || pathname === '/tach') {
+    if (pathname === '/lookup' || pathname === '/hobbs' || pathname === '/tach') {
       await sendPage(res, 'lookup.html');
       return;
     }

@@ -298,8 +298,8 @@ function mapReservation(row) {
     start: row.start_ts,
     end: row.end_ts,
     status: row.status,
-    tachTime: row.tach_time,
-    tachLoggedAt: row.tach_logged_at,
+    hobbsTime: row.hobbs_time,
+    hobbsLoggedAt: row.hobbs_logged_at,
     paid: !!row.paid,
     paidAt: row.paid_at,
     notes: row.notes,
@@ -421,7 +421,7 @@ function createReservation(input, { asAdmin = false } = {}) {
     .prepare(
       `INSERT INTO reservations
         (confirmation_id, plane_id, kind, renter_name, renter_phone, renter_email,
-         start_ts, end_ts, status, tach_time, tach_logged_at, paid, paid_at, notes, admin_notes,
+         start_ts, end_ts, status, hobbs_time, hobbs_logged_at, paid, paid_at, notes, admin_notes,
          created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', NULL, NULL, ?, ?, ?, ?, ?, ?)`
     )
@@ -495,17 +495,17 @@ function updateReservation(id, patch) {
     }
   }
 
-  let tachTime = existing.tachTime;
-  let tachLoggedAt = existing.tachLoggedAt;
-  if (patch.tachTime !== undefined) {
-    if (patch.tachTime === null || patch.tachTime === '') {
-      tachTime = null;
-      tachLoggedAt = null;
+  let hobbsTime = existing.hobbsTime;
+  let hobbsLoggedAt = existing.hobbsLoggedAt;
+  if (patch.hobbsTime !== undefined) {
+    if (patch.hobbsTime === null || patch.hobbsTime === '') {
+      hobbsTime = null;
+      hobbsLoggedAt = null;
     } else {
-      const value = Number(patch.tachTime);
-      if (!Number.isFinite(value) || value < 0) throw new HttpError(400, 'Tach time must be a positive number.');
-      tachTime = value;
-      tachLoggedAt = Date.now();
+      const value = Number(patch.hobbsTime);
+      if (!Number.isFinite(value) || value < 0) throw new HttpError(400, 'Hobbs time must be a positive number.');
+      hobbsTime = value;
+      hobbsLoggedAt = Date.now();
     }
   }
 
@@ -519,7 +519,7 @@ function updateReservation(id, patch) {
 
   db.prepare(
     `UPDATE reservations SET plane_id = ?, kind = ?, renter_name = ?, renter_phone = ?, renter_email = ?,
-       start_ts = ?, end_ts = ?, status = ?, tach_time = ?, tach_logged_at = ?, paid = ?, paid_at = ?,
+       start_ts = ?, end_ts = ?, status = ?, hobbs_time = ?, hobbs_logged_at = ?, paid = ?, paid_at = ?,
        notes = ?, admin_notes = ?, updated_at = ?
      WHERE id = ?`
   ).run(
@@ -531,8 +531,8 @@ function updateReservation(id, patch) {
     start,
     end,
     status,
-    tachTime,
-    tachLoggedAt,
+    hobbsTime,
+    hobbsLoggedAt,
     bool(paid),
     paidAt,
     patch.notes !== undefined ? String(patch.notes).trim() : existing.notes,
@@ -550,15 +550,15 @@ function deleteReservation(id) {
   return { ok: true };
 }
 
-function logTachTime(confirmationId, tachTime) {
+function logHobbsTime(confirmationId, hobbsTime) {
   const reservation = getReservationByConfirmation(confirmationId);
   if (!reservation || reservation.kind !== 'rental') throw new HttpError(404, 'We could not find that confirmation ID.');
   if (reservation.status !== 'confirmed') throw new HttpError(400, 'That reservation was cancelled.');
-  const value = Number(tachTime);
-  if (!Number.isFinite(value) || value < 0) throw new HttpError(400, 'Enter the tach time as a number, e.g. 3.4');
-  if (value > 100000) throw new HttpError(400, 'That tach reading looks too large.');
+  const value = Number(hobbsTime);
+  if (!Number.isFinite(value) || value < 0) throw new HttpError(400, 'Enter the Hobbs time as a number, e.g. 3.4');
+  if (value > 100000) throw new HttpError(400, 'That Hobbs reading looks too large.');
   const now = Date.now();
-  db.prepare('UPDATE reservations SET tach_time = ?, tach_logged_at = ?, updated_at = ? WHERE id = ?').run(
+  db.prepare('UPDATE reservations SET hobbs_time = ?, hobbs_logged_at = ?, updated_at = ? WHERE id = ?').run(
     value,
     now,
     now,
@@ -648,7 +648,7 @@ module.exports = {
   createReservation,
   updateReservation,
   deleteReservation,
-  logTachTime,
+  logHobbsTime,
   takeBackTime,
   busyWindows,
 };

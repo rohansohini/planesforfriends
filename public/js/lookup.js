@@ -1,8 +1,8 @@
-/* Confirmation-ID lookup + tach time logging. No account needed — the ID is the key. */
+/* Confirmation-ID lookup + Hobbs time logging. No account needed — the ID is the key. */
 
 (function () {
   const msg = $('#msg');
-  const tachMsg = $('#tach-msg');
+  const hobbsMsg = $('#hobbs-msg');
   const input = $('#conf-input');
   let current = null;
 
@@ -11,22 +11,22 @@
     await lookup(input.value);
   });
 
-  $('#tach-form').addEventListener('submit', async (event) => {
+  $('#hobbs-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!current) return;
-    const button = $('#tach-btn');
-    showMessage(tachMsg, '');
+    const button = $('#hobbs-btn');
+    showMessage(hobbsMsg, '');
     button.disabled = true;
     try {
-      const updated = await api(`/api/reservations/${encodeURIComponent(current.confirmationId)}/tach`, {
+      const updated = await api(`/api/reservations/${encodeURIComponent(current.confirmationId)}/hobbs`, {
         method: 'POST',
-        body: { tachTime: $('#tach-input').value },
+        body: { hobbsTime: $('#hobbs-input').value },
       });
       current = updated;
       render(updated);
-      showMessage(tachMsg, `Saved. Tach time logged as ${updated.tachTime}.`, 'ok');
+      showMessage(hobbsMsg, `Saved. Hobbs time logged as ${updated.hobbsTime}.`, 'ok');
     } catch (err) {
-      showMessage(tachMsg, err.message);
+      showMessage(hobbsMsg, err.message);
     } finally {
       button.disabled = false;
     }
@@ -41,7 +41,7 @@
   async function lookup(rawId) {
     const id = String(rawId || '').trim();
     showMessage(msg, '');
-    showMessage(tachMsg, '');
+    showMessage(hobbsMsg, '');
     if (!id) return showMessage(msg, 'Please type in your confirmation number.');
 
     const button = $('#lookup-btn');
@@ -78,7 +78,7 @@
     } else {
       showMessage(alert, '');
     }
-    $('#tach-card').classList.toggle('hidden', cancelled);
+    $('#hobbs-card').classList.toggle('hidden', cancelled);
     $('#reminders-card').classList.toggle('hidden', cancelled);
 
     const status = $('#result-status');
@@ -96,10 +96,10 @@
       ['How long', durationLabel(reservation.start, reservation.end)],
       ['Renter', reservation.renterName],
       [
-        'Tach time',
-        reservation.tachTime == null
+        'Hobbs time',
+        reservation.hobbsTime == null
           ? 'Not logged yet'
-          : `${reservation.tachTime} (logged ${fmtDateTime.format(new Date(reservation.tachLoggedAt))})`,
+          : `${reservation.hobbsTime} (logged ${fmtDateTime.format(new Date(reservation.hobbsLoggedAt))})`,
       ],
     ];
     for (const [label, value] of rows) {
@@ -110,11 +110,11 @@
     list.replaceChildren();
     for (const line of reservation.instructions) list.append(el('li', {}, line));
 
-    $('#tach-input').value = reservation.tachTime == null ? '' : reservation.tachTime;
-    $('#tach-help').textContent =
-      reservation.tachTime == null
-        ? 'Type in the tach time for this flight. You can change it later if you need to.'
-        : 'Tach time is already saved. Type a new number if you need to correct it.';
-    $('#tach-btn').textContent = reservation.tachTime == null ? 'Save tach time' : 'Update tach time';
+    $('#hobbs-input').value = reservation.hobbsTime == null ? '' : reservation.hobbsTime;
+    $('#hobbs-help').textContent =
+      reservation.hobbsTime == null
+        ? 'Type in the Hobbs time for this flight. You can change it later if you need to.'
+        : 'Hobbs time is already saved. Type a new number if you need to correct it.';
+    $('#hobbs-btn').textContent = reservation.hobbsTime == null ? 'Save Hobbs time' : 'Update Hobbs time';
   }
 })();

@@ -436,7 +436,7 @@ td.nowrap, th.nowrap { white-space: nowrap; }
 tr.cancelled td { opacity: 0.6; }
 tr.cancelled td:first-child { text-decoration: line-through; }
 
-input.tach-inline { width: 5.5rem; min-height: 2.6rem; padding: 0.3rem 0.5rem; }
+input.hobbs-inline { width: 5.5rem; min-height: 2.6rem; padding: 0.3rem 0.5rem; }
 input.notes-inline { width: 10rem; min-height: 2.6rem; padding: 0.3rem 0.5rem; }
 input.paid-box { width: 1.6rem; height: 1.6rem; min-height: 0; accent-color: var(--good); cursor: pointer; }
 label.check-line {

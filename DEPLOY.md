@@ -5,7 +5,7 @@ version — this page is the reference.
 
 ## The one thing that matters
 
-Every reservation, plane, owner and tach reading lives in **one SQLite file** on disk
+Every reservation, plane, owner and Hobbs reading lives in **one SQLite file** on disk
 (`data/planesforfriends.db`). That makes the app simple to run and trivial to back up, but it
 rules out any host with a throwaway filesystem — **Vercel, Netlify, Cloudflare Workers, Heroku,
 AWS Lambda and Render's free tier will all quietly erase your data**, usually on the next
@@ -169,7 +169,7 @@ Add to `fly.toml`, then `fly deploy`:
 - [ ] **Real phone numbers** under Settings and for each owner — they are printed on every
       renter's confirmation ("Contact Soney at … if there are any problems").
 - [ ] **Back up on a schedule** (below). One file is easy to save and easy to lose.
-- [ ] **Book a test flight yourself** end to end, then look it up and log a tach time. Five
+- [ ] **Book a test flight yourself** end to end, then look it up and log a Hobbs time. Five
       minutes, and it catches a wrong phone number before a renter does.
 
 ## Backups

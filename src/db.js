@@ -48,8 +48,8 @@ CREATE TABLE IF NOT EXISTS reservations (
   start_ts        INTEGER NOT NULL,
   end_ts          INTEGER NOT NULL,
   status          TEXT    NOT NULL DEFAULT 'confirmed',
-  tach_time       REAL,
-  tach_logged_at  INTEGER,
+  hobbs_time      REAL,
+  hobbs_logged_at INTEGER,
   paid            INTEGER NOT NULL DEFAULT 0,
   paid_at         INTEGER,
   notes           TEXT    NOT NULL DEFAULT '',
@@ -85,6 +85,17 @@ addColumnIfMissing('reservations', 'paid', 'INTEGER NOT NULL DEFAULT 0');
 addColumnIfMissing('reservations', 'paid_at', 'INTEGER');
 addColumnIfMissing('reservations', 'admin_notes', "TEXT NOT NULL DEFAULT ''");
 addColumnIfMissing('owners', 'manager_id', 'INTEGER REFERENCES owners(id) ON DELETE SET NULL');
+
+/* The readings were always Hobbs; only the label was wrong. Rename the columns
+   in place — the numbers themselves are untouched. */
+function renameColumnIfPresent(table, from, to) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+  if (!columns.includes(from) || columns.includes(to)) return;
+  db.exec(`ALTER TABLE ${table} RENAME COLUMN ${from} TO ${to}`);
+}
+
+renameColumnIfPresent('reservations', 'tach_time', 'hobbs_time');
+renameColumnIfPresent('reservations', 'tach_logged_at', 'hobbs_logged_at');
 
 /* ---------- password hashing (scrypt, no external deps) ---------- */
 

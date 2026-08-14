@@ -2,7 +2,7 @@
 
 A small plane-rental scheduler for a couple of friends who own recreational aircraft.
 Renters need no account — they pick a plane, pick an open time, leave their name, phone and
-email, and get a confirmation ID they use later to log tach time.
+email, and get a confirmation ID they use later to log Hobbs time.
 
 ## Running it
 
@@ -38,7 +38,7 @@ Ubuntu machine it comes down to `sudo bash deploy/install.sh rent-planes.duckdns
 | --- | --- | --- |
 | `/` | anyone | Lists everyone you can rent from |
 | `/rent/vinod`, `/rent/soney`, `/rent/<anyone-else>` | renters | Plane picker → availability calendar → booking form → confirmation ID |
-| `/lookup` | renters | Enter a confirmation ID to see the reservation and log tach time |
+| `/lookup` | renters | Enter a confirmation ID to see the reservation and log Hobbs time |
 | `/admin` | owners | Password-protected console for everything |
 
 Owner pages are created automatically when you add an owner in the admin console — add
@@ -72,7 +72,7 @@ a small screen sideways to find Thursday.
 
    The name and number are the plane owner's, or their manager's if one is set; the problems
    contact is a site setting (Admin → Settings), so it changes in one place.
-5. **After flying**, `/lookup` takes the confirmation ID and accepts a tach time — a single
+5. **After flying**, `/lookup` takes the confirmation ID and accepts a Hobbs time — a single
    logged number, editable afterwards.
 
 ### Renter privacy
@@ -93,8 +93,8 @@ Sign in at `/admin` with the shared password.
   marks right now.
 - **List & export** — every reservation across every plane and every owner. Filter by plane with the
   dropdown (grouped by owner), by date range, and by payment (paid / unpaid / both). The line
-  under the filters totals the records shown, how many are unpaid, and the tach hours logged.
-  Three things edit in place, no modal: **tach time** (type a number, tab away), the **Paid**
+  under the filters totals the records shown, how many are unpaid, and the Hobbs hours logged.
+  Three things edit in place, no modal: **Hobbs time** (type a number, tab away), the **Paid**
   checkbox, and **Owner notes**. Everything else — plane, times, renter details, status — is in
   the Edit modal, which also deletes.
   - **Paid** is a plain tick-box the owners check as money comes in; the date it was ticked is
@@ -111,7 +111,7 @@ Sign in at `/admin` with the shared password.
     number to call. Relabelling a booked rental as blocked time is refused outright, because it
     would silently break the renter's lookup.
   - **Download spreadsheet (CSV)** exports exactly what the filters show — one row per
-    reservation with tach time, hours reserved, paid status and date, renter contact, and both
+    reservation with Hobbs time, hours reserved, paid status and date, renter contact, and both
     the renter's note and the owner notes. Opens in Excel, Numbers or Google Sheets.
 - **Planes** — add a plane, assign it to an owner, edit tail number/model/nickname/renter notes,
   hide it from the site without deleting, or delete it outright. Adding a plane puts it on that

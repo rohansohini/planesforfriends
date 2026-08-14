@@ -256,7 +256,7 @@ see *If something goes wrong* below.
 3. **Owners** → delete the sample owners and add Vinod and Soney with their real phone numbers.
    Renters are told to call these numbers about pricing, so a typo here is a real problem.
 4. **Planes** → add the six real planes with their tail numbers.
-5. **Book a test flight yourself** on `/rent/vinod`, then look it up on `/lookup` and log a tach
+5. **Book a test flight yourself** on `/rent/vinod`, then look it up on `/lookup` and log a Hobbs
    time. Five minutes, and it catches a wrong number before a renter does.
 6. Text the two links to your dad: `your-address/rent/vinod` and `your-address/rent/soney`.
 7. **Set up a free uptime alert.** Make an account at [uptimerobot.com](https://uptimerobot.com),
@@ -366,7 +366,7 @@ The site's code and the site's data live in two different folders, on purpose:
 | The code | `/opt/planesforfriends` | replaced with the new version |
 | Your data | `/var/lib/planesforfriends` | **never touched** |
 
-Reservations, tach readings, owners, planes, the phone numbers you set, and your admin password
+Reservations, Hobbs readings, owners, planes, the phone numbers you set, and your admin password
 are all in the data folder. Updating the code cannot delete them, and the update takes a backup
 first regardless.
 
@@ -427,7 +427,7 @@ sudo chown pff:pff /var/lib/planesforfriends/planesforfriends.db
 sudo systemctl start planesforfriends
 ```
 
-Every reservation, tach reading and confirmation number comes back exactly as it was, including
+Every reservation, Hobbs reading and confirmation number comes back exactly as it was, including
 the admin password from that backup.
 
 **Moving to a real domain** later: buy the name, point its A record at the same Public IP, then

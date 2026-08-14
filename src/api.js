@@ -58,8 +58,8 @@ function buildCsv(reservations, timeZone) {
     'Start',
     'End',
     'Hours Reserved',
-    'Tach Time',
-    'Tach Logged',
+    'Hobbs Time',
+    'Hobbs Logged',
     'Paid',
     'Paid On',
     'Renter Name',
@@ -82,8 +82,8 @@ function buildCsv(reservations, timeZone) {
         formatInZone(r.start, timeZone),
         formatInZone(r.end, timeZone),
         ((r.end - r.start) / 3600000).toFixed(2),
-        r.tachTime == null ? '' : r.tachTime,
-        formatInZone(r.tachLoggedAt, timeZone),
+        r.hobbsTime == null ? '' : r.hobbsTime,
+        formatInZone(r.hobbsLoggedAt, timeZone),
         r.paid ? 'Paid' : 'Unpaid',
         formatInZone(r.paidAt, timeZone),
         r.renterName,
@@ -131,8 +131,8 @@ function renterView(r) {
     renterName: r.renterName,
     renterPhone: r.renterPhone,
     renterEmail: r.renterEmail,
-    tachTime: r.tachTime,
-    tachLoggedAt: r.tachLoggedAt,
+    hobbsTime: r.hobbsTime,
+    hobbsLoggedAt: r.hobbsLoggedAt,
     instructions: instructionsFor(r),
   };
 }
@@ -226,9 +226,10 @@ async function handleApi(req, res, ctx) {
     return send(200, renterView(reservation));
   }
 
-  const tachMatch = pathname.match(/^\/api\/reservations\/([A-Za-z0-9-]+)\/tach$/);
-  if (tachMatch && method === 'POST') {
-    const reservation = store.logTachTime(tachMatch[1], body.tachTime);
+  // /tach is the old spelling, kept so a page left open across an update still works.
+  const hobbsMatch = pathname.match(/^\/api\/reservations\/([A-Za-z0-9-]+)\/(?:hobbs|tach)$/);
+  if (hobbsMatch && method === 'POST') {
+    const reservation = store.logHobbsTime(hobbsMatch[1], body.hobbsTime ?? body.tachTime);
     return send(200, renterView(reservation));
   }
 
@@ -292,8 +293,8 @@ async function handleApi(req, res, ctx) {
       },
       { asAdmin: true }
     );
-    if (body.tachTime !== undefined && body.tachTime !== null && body.tachTime !== '') {
-      return send(201, store.updateReservation(reservation.id, { tachTime: body.tachTime }));
+    if (body.hobbsTime !== undefined && body.hobbsTime !== null && body.hobbsTime !== '') {
+      return send(201, store.updateReservation(reservation.id, { hobbsTime: body.hobbsTime }));
     }
     return send(201, reservation);
   }
