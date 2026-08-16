@@ -61,6 +61,7 @@ function buildCsv(reservations, timeZone) {
     'Hobbs Time',
     'Hobbs Logged',
     'Paid',
+    'Amount Paid',
     'Paid On',
     'Renter Name',
     'Renter Phone',
@@ -85,6 +86,7 @@ function buildCsv(reservations, timeZone) {
         r.hobbsTime == null ? '' : r.hobbsTime,
         formatInZone(r.hobbsLoggedAt, timeZone),
         r.paid ? 'Paid' : 'Unpaid',
+        r.paidAmount == null ? '' : Number(r.paidAmount).toFixed(2),
         formatInZone(r.paidAt, timeZone),
         r.renterName,
         r.renterPhone,
@@ -289,6 +291,7 @@ async function handleApi(req, res, ctx) {
         notes: body.notes,
         adminNotes: body.adminNotes,
         paid: body.paid,
+        paidAmount: body.paidAmount,
         kind: body.kind,
       },
       { asAdmin: true }

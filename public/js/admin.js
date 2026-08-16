@@ -224,9 +224,11 @@
     const rentals = state.reservations.filter((r) => r.kind === 'rental' && r.status === 'confirmed');
     const unpaid = rentals.filter((r) => !r.paid).length;
     const hours = rentals.reduce((sum, r) => sum + (r.hobbsTime || 0), 0);
+    const collected = state.reservations.reduce((sum, r) => sum + (Number(r.paidAmount) || 0), 0);
     $('#filter-hint').textContent =
       `Showing ${state.reservations.length} record${state.reservations.length === 1 ? '' : 's'} for ${scope} · ` +
-      `${unpaid} unpaid · ${hours.toFixed(1)} Hobbs hours logged. The CSV download uses these same filters.`;
+      `${unpaid} unpaid · ${hours.toFixed(1)} Hobbs hours logged · ${fmtMoney.format(collected)} recorded. ` +
+      'The CSV download uses these same filters.';
   }
 
   $('#filter-paid').addEventListener('change', () => {
@@ -295,6 +297,7 @@
           ),
           el('td', {}, hobbsCell(r)),
           el('td', { class: 'center' }, paidCell(r)),
+          el('td', {}, amountCell(r)),
           el('td', {}, adminNotesCell(r))
         )
       );
@@ -349,6 +352,44 @@
       }
     });
     return box;
+  }
+
+  /* Money reads as money: 240 comes back as 240.00, blank stays blank. */
+  const amountValue = (v) => (v == null || v === '' ? '' : Number(v).toFixed(2));
+
+  /* How much they actually paid, alongside the tick box. Saves the same way as
+     Hobbs: type a number, tab away. Blank means nothing recorded yet. */
+  function amountCell(reservation) {
+    const wrap = el('div', { class: 'amount-wrap' }, el('span', { class: 'amount-prefix' }, '$'));
+    const input = el('input', {
+      type: 'number',
+      step: '0.01',
+      min: '0',
+      class: 'amount-inline',
+      placeholder: '—',
+      title: 'How much the renter paid — type a number and tab away to save',
+      value: amountValue(reservation.paidAmount),
+    });
+    wrap.append(input);
+    let last = input.value;
+    input.addEventListener('change', async () => {
+      if (input.value === last) return;
+      const updated = await patchField(
+        reservation,
+        { paidAmount: input.value === '' ? null : input.value },
+        input,
+        () => {
+          input.value = last;
+        },
+        `Amount saved for ${reservation.confirmationId}.`
+      );
+      if (updated) {
+        last = amountValue(updated.paidAmount);
+        input.value = last;
+        updateFilterHint();
+      }
+    });
+    return wrap;
   }
 
   /* Owner notes: private to Vinod and Soney, never sent to a renter. */
@@ -473,6 +514,15 @@
       class: 'paid-box',
       checked: (reservation && reservation.paid) || undefined,
     });
+    const amountField = el('input', {
+      id: 'm-amount',
+      type: 'number',
+      step: '0.01',
+      min: '0',
+      class: 'amount-inline',
+      placeholder: 'Amount',
+      value: reservation ? amountValue(reservation.paidAmount) : '',
+    });
 
     form.append(
       el('div', { class: 'field-row' },
@@ -505,7 +555,13 @@
           'div',
           { class: 'field' },
           el('label', { for: 'm-paid' }, 'Payment'),
-          el('label', { class: 'check-line', for: 'm-paid' }, paidField, 'Paid')
+          el(
+            'div',
+            { class: 'pay-line' },
+            el('label', { class: 'check-line', for: 'm-paid' }, paidField, 'Paid'),
+            el('div', { class: 'amount-wrap' }, el('span', { class: 'amount-prefix' }, '$'), amountField)
+          ),
+          el('p', { class: 'field-hint' }, 'Leave the amount blank if you have not recorded one yet.')
         )
       ),
       el('div', { class: 'field-row' },
@@ -584,6 +640,7 @@
         notes: notesField.value.trim(),
         adminNotes: adminNotesField.value.trim(),
         paid: paidField.checked,
+        paidAmount: amountField.value === '' ? null : amountField.value,
         status: statusSelect.value,
         hobbsTime: hobbsField.value === '' ? null : hobbsField.value,
       };

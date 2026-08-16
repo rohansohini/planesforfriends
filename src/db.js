@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS reservations (
   hobbs_logged_at INTEGER,
   paid            INTEGER NOT NULL DEFAULT 0,
   paid_at         INTEGER,
+  paid_amount     REAL,
   notes           TEXT    NOT NULL DEFAULT '',
   admin_notes     TEXT    NOT NULL DEFAULT '',
   created_at      INTEGER NOT NULL,
@@ -83,6 +84,7 @@ function addColumnIfMissing(table, column, definition) {
 
 addColumnIfMissing('reservations', 'paid', 'INTEGER NOT NULL DEFAULT 0');
 addColumnIfMissing('reservations', 'paid_at', 'INTEGER');
+addColumnIfMissing('reservations', 'paid_amount', 'REAL');
 addColumnIfMissing('reservations', 'admin_notes', "TEXT NOT NULL DEFAULT ''");
 addColumnIfMissing('owners', 'manager_id', 'INTEGER REFERENCES owners(id) ON DELETE SET NULL');
 

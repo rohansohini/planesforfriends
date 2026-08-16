@@ -93,12 +93,16 @@ Sign in at `/admin` with the shared password.
   marks right now.
 - **List & export** — every reservation across every plane and every owner. Filter by plane with the
   dropdown (grouped by owner), by date range, and by payment (paid / unpaid / both). The line
-  under the filters totals the records shown, how many are unpaid, and the Hobbs hours logged.
-  Three things edit in place, no modal: **Hobbs time** (type a number, tab away), the **Paid**
-  checkbox, and **Owner notes**. Everything else — plane, times, renter details, status — is in
-  the Edit modal, which also deletes.
+  under the filters totals the records shown, how many are unpaid, the Hobbs hours logged, and
+  the money recorded. Four things edit in place, no modal: **Hobbs time** (type a number, tab
+  away), the **Paid** checkbox, the **Amount** paid, and **Owner notes**. Everything else —
+  plane, times, renter details, status — is in the Edit modal, which also deletes.
   - **Paid** is a plain tick-box the owners check as money comes in; the date it was ticked is
     kept and shown on hover, and renters never see any of it.
+  - **Amount** sits next to that tick-box and records how much the renter actually handed over.
+    It is independent of the tick-box on purpose — a figure can be entered before the cheque
+    clears, and unticking Paid never wipes a number already recorded. Blank means nothing has
+    been recorded yet, which is not the same as zero.
   - **Owner notes** are private to Vinod and Soney — separate from the note a renter leaves when
     booking, which shows under their name in the same table.
   - **Add reservation** books on someone's behalf (phone-in bookings).
@@ -111,7 +115,7 @@ Sign in at `/admin` with the shared password.
     number to call. Relabelling a booked rental as blocked time is refused outright, because it
     would silently break the renter's lookup.
   - **Download spreadsheet (CSV)** exports exactly what the filters show — one row per
-    reservation with Hobbs time, hours reserved, paid status and date, renter contact, and both
+    reservation with Hobbs time, hours reserved, paid status, amount and date, renter contact, and both
     the renter's note and the owner notes. Opens in Excel, Numbers or Google Sheets.
 - **Planes** — add a plane, assign it to an owner, edit tail number/model/nickname/renter notes,
   hide it from the site without deleting, or delete it outright. Adding a plane puts it on that
@@ -131,7 +135,8 @@ Sign in at `/admin` with the shared password.
 ## Notes and limits
 
 - **Payment is tracked, not processed.** Money changes hands however the owners already do it;
-  the site just records who has paid.
+  the site just records who has paid and how much. Amounts are plain dollars — no tax, fees or
+  rates are calculated anywhere.
 - **No notifications.** Nothing is texted or emailed; the confirmation is shown on screen, and
   owners see new bookings when they open the admin page.
 - **Times display in each browser's local time zone.** The time zone in Settings is used for the

@@ -431,7 +431,7 @@ button.cal-event:hover { filter: brightness(0.96); }
 /* ---------- tables ---------- */
 
 .table-scroll { overflow-x: auto; }
-.table-scroll table { min-width: 980px; }
+.table-scroll table { min-width: 1080px; }
 table { width: 100%; border-collapse: collapse; font-size: 0.98rem; }
 th, td { text-align: left; padding: 0.7rem 0.65rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
 th {
@@ -451,6 +451,21 @@ tr.cancelled td:first-child { text-decoration: line-through; }
 input.hobbs-inline { width: 5.5rem; min-height: 2.6rem; padding: 0.3rem 0.5rem; }
 input.notes-inline { width: 10rem; min-height: 2.6rem; padding: 0.3rem 0.5rem; }
 input.paid-box { width: 1.6rem; height: 1.6rem; min-height: 0; accent-color: var(--good); cursor: pointer; }
+
+/* Amount paid: a dollar sign sits inside the box so the number reads as money
+   without anyone having to type the symbol. */
+.amount-wrap { position: relative; display: inline-block; }
+.amount-prefix {
+  position: absolute;
+  left: 0.55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+  font-size: 0.95rem;
+}
+input.amount-inline { width: 6.5rem; min-height: 2.6rem; padding: 0.3rem 0.5rem 0.3rem 1.5rem; }
+.pay-line { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 label.check-line {
   display: flex;
   align-items: center;

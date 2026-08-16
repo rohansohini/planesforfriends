@@ -51,6 +51,21 @@ function uniqueSlug(name, excludeId = null) {
 
 const bool = (v) => (v ? 1 : 0);
 
+/**
+ * How much a renter actually handed over. Blank means "nothing recorded", which
+ * is not the same as zero — plenty of rentals are settled before anyone gets
+ * round to typing the number in. Dollar signs and commas are stripped so a
+ * pasted "$1,250.00" works.
+ */
+function parseAmount(raw) {
+  if (raw == null || raw === '') return null;
+  const cleaned = typeof raw === 'string' ? raw.replace(/[$,\s]/g, '') : raw;
+  const value = Number(cleaned);
+  if (!Number.isFinite(value) || value < 0) throw new HttpError(400, 'Enter the amount as a number, e.g. 240 or 240.50');
+  if (value > 1000000) throw new HttpError(400, 'That amount looks too large.');
+  return Math.round(value * 100) / 100;
+}
+
 /* ---------- owners ---------- */
 
 function listOwners({ includeInactive = false } = {}) {
@@ -302,6 +317,7 @@ function mapReservation(row) {
     hobbsLoggedAt: row.hobbs_logged_at,
     paid: !!row.paid,
     paidAt: row.paid_at,
+    paidAmount: row.paid_amount,
     notes: row.notes,
     adminNotes: row.admin_notes,
     createdAt: row.created_at,
@@ -421,9 +437,9 @@ function createReservation(input, { asAdmin = false } = {}) {
     .prepare(
       `INSERT INTO reservations
         (confirmation_id, plane_id, kind, renter_name, renter_phone, renter_email,
-         start_ts, end_ts, status, hobbs_time, hobbs_logged_at, paid, paid_at, notes, admin_notes,
-         created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', NULL, NULL, ?, ?, ?, ?, ?, ?)`
+         start_ts, end_ts, status, hobbs_time, hobbs_logged_at, paid, paid_at, paid_amount,
+         notes, admin_notes, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', NULL, NULL, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       confirmationId,
@@ -436,6 +452,7 @@ function createReservation(input, { asAdmin = false } = {}) {
       end,
       asAdmin && input.paid ? 1 : 0,
       asAdmin && input.paid ? now : null,
+      asAdmin ? parseAmount(input.paidAmount) : null,
       String(input.notes || '').trim(),
       asAdmin ? String(input.adminNotes || '').trim() : '',
       now,
@@ -517,10 +534,15 @@ function updateReservation(id, patch) {
     paidAt = paid ? existing.paidAt || Date.now() : null;
   }
 
+  // The amount stands on its own: someone may record $240 before the cheque
+  // clears, or tick paid without ever typing a figure. Clearing the box does
+  // not wipe a number that was already entered.
+  const paidAmount = patch.paidAmount !== undefined ? parseAmount(patch.paidAmount) : existing.paidAmount;
+
   db.prepare(
     `UPDATE reservations SET plane_id = ?, kind = ?, renter_name = ?, renter_phone = ?, renter_email = ?,
        start_ts = ?, end_ts = ?, status = ?, hobbs_time = ?, hobbs_logged_at = ?, paid = ?, paid_at = ?,
-       notes = ?, admin_notes = ?, updated_at = ?
+       paid_amount = ?, notes = ?, admin_notes = ?, updated_at = ?
      WHERE id = ?`
   ).run(
     planeId,
@@ -535,6 +557,7 @@ function updateReservation(id, patch) {
     hobbsLoggedAt,
     bool(paid),
     paidAt,
+    paidAmount,
     patch.notes !== undefined ? String(patch.notes).trim() : existing.notes,
     patch.adminNotes !== undefined ? String(patch.adminNotes).trim() : existing.adminNotes,
     Date.now(),

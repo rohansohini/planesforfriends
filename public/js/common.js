@@ -61,6 +61,8 @@ function showMessage(container, text, kind = 'error') {
   container.textContent = text;
 }
 
+const fmtMoney = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' });
+
 /* ---------- dates (all in the browser's local time) ---------- */
 
 const fmtDate = new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
