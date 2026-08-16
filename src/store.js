@@ -2,6 +2,9 @@
 
 const crypto = require('node:crypto');
 const { db, getSetting } = require('./db');
+// The same rules the browser applies as you type, so a phone-in booking entered
+// through the API is stored exactly like one typed into a form.
+const { tidyPhone, tidyEmail } = require('../public/js/format.js');
 
 /* ---------- helpers ---------- */
 
@@ -150,7 +153,7 @@ function createOwner({ name, phone = '', email = '', slug = '', managerId = null
     .prepare(
       'INSERT INTO owners (slug, name, phone, email, manager_id, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)'
     )
-    .run(finalSlug, finalName, String(phone || '').trim(), String(email || '').trim(), manager, Date.now());
+    .run(finalSlug, finalName, tidyPhone(phone), tidyEmail(email), manager, Date.now());
   return getOwner(info.lastInsertRowid);
 }
 
@@ -167,8 +170,8 @@ function updateOwner(id, patch) {
   ).run(
     name,
     slug,
-    patch.phone !== undefined ? String(patch.phone).trim() : owner.phone,
-    patch.email !== undefined ? String(patch.email).trim() : owner.email,
+    patch.phone !== undefined ? tidyPhone(patch.phone) : owner.phone,
+    patch.email !== undefined ? tidyEmail(patch.email) : owner.email,
     manager,
     patch.active !== undefined ? bool(patch.active) : bool(owner.active),
     owner.id
@@ -408,8 +411,8 @@ function createReservation(input, { asAdmin = false } = {}) {
   const kind = input.kind === 'block' ? 'block' : 'rental';
 
   const name = String(input.renterName || '').trim();
-  const phone = String(input.renterPhone || '').trim();
-  const email = String(input.renterEmail || '').trim();
+  const phone = tidyPhone(input.renterPhone);
+  const email = tidyEmail(input.renterEmail);
 
   if (kind === 'rental') {
     if (!name) throw new HttpError(400, 'Please enter your name.');
@@ -494,8 +497,8 @@ function updateReservation(id, patch) {
 
   if (kind === 'rental' && existing.kind === 'block') {
     const name = patch.renterName !== undefined ? String(patch.renterName).trim() : existing.renterName;
-    const phone = patch.renterPhone !== undefined ? String(patch.renterPhone).trim() : existing.renterPhone;
-    const email = patch.renterEmail !== undefined ? String(patch.renterEmail).trim() : existing.renterEmail;
+    const phone = patch.renterPhone !== undefined ? tidyPhone(patch.renterPhone) : existing.renterPhone;
+    const email = patch.renterEmail !== undefined ? tidyEmail(patch.renterEmail) : existing.renterEmail;
     if (!name || !phone || !email) {
       throw new HttpError(400, 'A rental needs a renter name, phone and email. Add those, or leave this as blocked-off time.');
     }
@@ -548,8 +551,8 @@ function updateReservation(id, patch) {
     planeId,
     kind,
     patch.renterName !== undefined ? String(patch.renterName).trim() : existing.renterName,
-    patch.renterPhone !== undefined ? String(patch.renterPhone).trim() : existing.renterPhone,
-    patch.renterEmail !== undefined ? String(patch.renterEmail).trim() : existing.renterEmail,
+    patch.renterPhone !== undefined ? tidyPhone(patch.renterPhone) : existing.renterPhone,
+    patch.renterEmail !== undefined ? tidyEmail(patch.renterEmail) : existing.renterEmail,
     start,
     end,
     status,

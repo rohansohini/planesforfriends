@@ -520,7 +520,7 @@
       step: '0.01',
       min: '0',
       class: 'amount-inline',
-      placeholder: 'Amount',
+      placeholder: '0.00',
       value: reservation ? amountValue(reservation.paidAmount) : '',
     });
 

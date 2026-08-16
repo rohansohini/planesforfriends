@@ -54,6 +54,24 @@ numbered steps with one obvious button at the end, and error messages say what t
 The calendar drops to three days on a tablet and one day on a phone, so nobody has to scroll
 a small screen sideways to find Thursday.
 
+### Phone numbers and emails tidy themselves
+
+Every phone box on the site — the booking form, both admin modals, the owner form, the
+problems-contact setting — formats as it is typed: `5551234567` becomes `(555) 123-4567`, and so
+does `1-555.123.4567` or anything else pasted in. Partial numbers stay partial (`(555) 12`) so
+backspace always deletes something visible instead of fighting the formatter, and the caret stays
+where the person is typing. Email boxes lowercase themselves when you leave the field, so
+`Vinod@Example.COM` and `vinod@example.com` are stored as the same person.
+
+Anything that is not a plain ten-digit North American number is left exactly as typed —
+international numbers, extensions, anything with a `+` or letters. Guessing at those mangles real
+numbers, and this is a phone book the owners actually dial.
+
+The rules live in `public/js/format.js`, which the browser loads *and* the server requires, so a
+booking taken over the phone and entered through the admin console is stored the same way as one
+a renter types in. Records saved before this existed keep whatever was typed then;
+`npm run tidy-contacts` shows what it would change, and `-- --apply` writes it.
+
 ## How renting works
 
 1. **Pick a plane.** Every owner page shows a plane picker, even when the owner has only one.
@@ -157,8 +175,10 @@ src/api.js           JSON API, instructions, CSV export
 src/auth.js          admin sessions
 public/              index.html, rent.html, lookup.html, admin.html + css/js
 public/js/calendar.js  week calendar shared by the renter pages and the admin console
+public/js/format.js    phone/email tidying, loaded by the browser and required by the server
 scripts/seed.js      starting owners and planes
 scripts/backup.js    snapshot of the live database
+scripts/tidy-contacts.js  one-time clean-up of contacts saved before the formatting existed
 deploy/update.sh     back up, pull, reinstall, restart, verify
 deploy/duckdns-refresh.sh  weekly job keeping the free hostname pointed at the machine
 Dockerfile           for Fly.io or any container host

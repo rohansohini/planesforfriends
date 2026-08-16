@@ -61,6 +61,50 @@ function showMessage(container, text, kind = 'error') {
   container.textContent = text;
 }
 
+/* ---------- phone and email boxes tidy themselves ---------- */
+
+/* Delegated from the document so this covers every phone and email field on
+   the site at once — the booking form, the admin forms, and the ones the
+   modals build on the fly — with nothing to remember to wire up. The rules
+   themselves live in format.js, which the server uses too. */
+
+function reformatPhoneField(input) {
+  const before = input.value;
+  const next = formatPhone(before);
+  if (next === before) return;
+  // Keep the caret where the person is actually typing: count the digits ahead
+  // of it, then find that spot again in the reformatted text.
+  const caret = input.selectionStart == null ? before.length : input.selectionStart;
+  const digitsBefore = before.slice(0, caret).replace(/\D/g, '').length;
+  input.value = next;
+  let pos = 0;
+  let seen = 0;
+  while (pos < next.length && seen < digitsBefore) {
+    if (/\d/.test(next[pos])) seen += 1;
+    pos += 1;
+  }
+  while (pos < next.length && !/\d/.test(next[pos])) pos += 1;
+  try {
+    input.setSelectionRange(pos, pos);
+  } catch {
+    /* some input types refuse a selection; the value is still formatted */
+  }
+}
+
+document.addEventListener('input', (event) => {
+  const target = event.target;
+  if (target && target.matches && target.matches('input[type="tel"]')) reformatPhoneField(target);
+});
+
+/* Email waits until the box is left: lowercasing mid-word would drag the caret
+   to the end while somebody is editing the middle of an address. */
+document.addEventListener('focusout', (event) => {
+  const target = event.target;
+  if (!target || !target.matches) return;
+  if (target.matches('input[type="tel"]')) target.value = tidyPhone(target.value);
+  else if (target.matches('input[type="email"]')) target.value = tidyEmail(target.value);
+});
+
 const fmtMoney = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' });
 
 /* ---------- dates (all in the browser's local time) ---------- */

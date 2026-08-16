@@ -4,6 +4,7 @@ const { allSettings, getSetting, setSetting, DEFAULT_SETTINGS } = require('./db'
 const store = require('./store');
 const { HttpError } = store;
 const auth = require('./auth');
+const { tidyPhone } = require('../public/js/format.js');
 
 /* ---------- rental instructions ---------- */
 
@@ -344,7 +345,7 @@ async function handleApi(req, res, ctx) {
     const allowed = Object.keys(DEFAULT_SETTINGS);
     for (const [key, value] of Object.entries(body || {})) {
       if (!allowed.includes(key)) continue;
-      setSetting(key, value);
+      setSetting(key, key === 'ops_contact_phone' ? tidyPhone(value) : value);
     }
     return send(200, allSettings());
   }
