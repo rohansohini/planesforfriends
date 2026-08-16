@@ -307,6 +307,8 @@ function mapReservation(row) {
     ownerName: row.owner_name ?? undefined,
     ownerSlug: row.owner_slug ?? undefined,
     ownerPhone: row.owner_phone ?? undefined,
+    managerName: row.manager_name ?? null,
+    managerPhone: row.manager_phone ?? null,
     contactName: row.manager_name || row.owner_name,
     contactPhone: row.manager_name ? row.manager_phone : row.owner_phone,
     kind: row.kind,

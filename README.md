@@ -86,10 +86,12 @@ a renter types in. Records saved before this existed keep whatever was typed the
    1. Contact *the owner, or their manager* at *that number* about renting.
    2. Treat the plane as if it was your own.
    3. Top off the gas once you are finished.
-   4. Contact *Soney* at *Soney's number* if there are any problems.
+   4. Contact *the person looking after this plane* at *that number* if there are any problems.
 
-   The name and number are the plane owner's, or their manager's if one is set; the problems
-   contact is a site setting (Admin → Settings), so it changes in one place.
+   Both names are the plane owner's, or their manager's if one is set — a renter never has to
+   work out who actually handles the aircraft. For an owner who does their own renting, the
+   problems contact falls back to the site-wide one in Admin → Settings, so that changes in one
+   place.
 5. **After flying**, `/lookup` takes the confirmation ID and accepts a Hobbs time — a single
    logged number, editable afterwards.
 
@@ -141,13 +143,14 @@ Sign in at `/admin` with the shared password.
 - **Owners** — add anyone to rent from, which creates their `/rent/<name>` page. Owners can be
   hidden without being deleted.
   - **Somebody else handles their renting** ticks a manager onto an owner, chosen from the other
-    owners. Renters then see the manager's name and number everywhere — the owner's page, the
-    confirmation instructions, the lookup — while the plane stays recorded as the owner's. Soney
+    owners. Renters then see the manager's name and number everywhere — the owner's page, both
+    contact lines on the confirmation, the lookup — while the plane stays recorded as the owner's. Soney
     fielding calls for Vinod's plane is the case this exists for. Managers are one level deep:
     somebody who is managed cannot manage, and a manager cannot be deleted while they still
     cover for someone.
-- **Settings** — site title, the "problems" contact name and number, the export time zone, the
-  hours the calendar shows (5am–midnight by default), how far ahead renters can book, and the
+- **Settings** — site title, the "problems" contact name and number (used only for owners who do
+  their own renting — a managed owner's renters are pointed at the manager), the export time zone,
+  the hours the calendar shows (5am–midnight by default), how far ahead renters can book, and the
   admin password.
 
 ## Notes and limits

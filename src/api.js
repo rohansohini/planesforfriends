@@ -9,11 +9,16 @@ const { tidyPhone } = require('../public/js/format.js');
 /* ---------- rental instructions ---------- */
 
 function instructionsFor(reservation) {
-  const opsName = getSetting('ops_contact_name', 'Soney');
-  const opsPhone = getSetting('ops_contact_phone', '');
   // Whoever handles this owner's rentals — the manager if there is one.
   const ownerName = reservation.contactName || reservation.ownerName || 'the owner';
   const ownerPhone = reservation.contactPhone || reservation.ownerPhone || 'the number on file';
+  // Problems go to the same person when this plane is managed for its owner:
+  // Soney fielding calls for Vinod's plane is who a renter should ring either
+  // way. Only an owner who handles their own renting falls back to the
+  // site-wide contact in Settings.
+  const managed = !!reservation.managerName;
+  const opsName = managed ? reservation.managerName : getSetting('ops_contact_name', 'Soney');
+  const opsPhone = managed ? reservation.managerPhone : getSetting('ops_contact_phone', '');
   return [
     `Contact ${ownerName} at ${ownerPhone} about renting.`,
     'Treat the plane as if it was your own.',
