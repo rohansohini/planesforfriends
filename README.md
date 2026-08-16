@@ -81,12 +81,14 @@ a renter types in. Records saved before this existed keep whatever was typed the
    end can be fine-tuned in the two time fields under the calendar.
 3. **Leave your details.** Name, phone, email. The server re-checks for a conflict at the moment
    of booking, so two people clicking at once cannot double-book.
-4. **Get a confirmation ID** like `PFF-7K3QD2`, shown on screen along with the four
-   pre-flight instructions:
+4. **Get a confirmation ID** like `PFF-7K3QD2`, shown on screen along with the pre-flight
+   instructions:
    1. Contact *the owner, or their manager* at *that number* about renting.
    2. Treat the plane as if it was your own.
-   3. Top off the gas once you are finished.
-   4. Contact *the person looking after this plane* at *that number* if there are any problems.
+   3. Top off the gas once you are finished — fill the fuel tanks all the way back to full
+      before you leave.
+   4. Payment is due once you land, by the end of the day you fly.
+   5. Contact *the person looking after this plane* at *that number* if there are any problems.
 
    Both names are the plane owner's, or their manager's if one is set — a renter never has to
    work out who actually handles the aircraft. For an owner who does their own renting, the

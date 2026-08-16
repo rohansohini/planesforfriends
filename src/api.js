@@ -22,7 +22,8 @@ function instructionsFor(reservation) {
   return [
     `Contact ${ownerName} at ${ownerPhone} about renting.`,
     'Treat the plane as if it was your own.',
-    'Top off the gas once you are finished.',
+    'Top off the gas once you are finished — fill the fuel tanks all the way back to full before you leave.',
+    'Payment is due once you land, by the end of the day you fly.',
     `Contact ${opsName} at ${opsPhone} if there are any problems.`,
   ];
 }
