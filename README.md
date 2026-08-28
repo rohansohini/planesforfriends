@@ -36,13 +36,24 @@ Ubuntu machine it comes down to `sudo bash deploy/install.sh rent-planes.duckdns
 
 | URL | Who | What |
 | --- | --- | --- |
-| `/` | anyone | Lists everyone you can rent from |
+| `/` | anyone | Lists everyone you can rent from, and the rental policy to print and sign |
 | `/rent/vinod`, `/rent/soney`, `/rent/<anyone-else>` | renters | Plane picker → availability calendar → booking form → confirmation ID |
 | `/lookup` | renters | Enter a confirmation ID to see the reservation and log Hobbs time |
 | `/admin` | owners | Password-protected console for everything |
 
 Owner pages are created automatically when you add an owner in the admin console — add
 "Raj Patel" and `/rent/raj-patel` is live immediately.
+
+### The rental policy
+
+The home page carries a card pointing at the signed-once rental policy, served straight from
+`public/docs/`. A renter opens it, prints it, signs the acknowledgment page and texts or emails
+it back — the site does not collect the signed copy, on purpose: taking uploads of documents
+carrying certificate numbers and addresses would mean storing and protecting them.
+
+Today that is one document, `rental-policy-n84412-cessna-172k.pdf` (Vinod's Cessna 172K), and
+the card names the aircraft it covers. A second plane's policy is a file dropped into the same
+folder plus a link beside the first.
 
 ## Built for readers who are not 25
 
@@ -179,6 +190,7 @@ src/store.js         owners / planes / reservations, conflict checks
 src/api.js           JSON API, instructions, CSV export
 src/auth.js          admin sessions
 public/              index.html, rent.html, lookup.html, admin.html + css/js
+public/docs/         rental policy PDFs linked from the home page
 public/js/calendar.js  week calendar shared by the renter pages and the admin console
 public/js/format.js    phone/email tidying, loaded by the browser and required by the server
 scripts/seed.js      starting owners and planes
