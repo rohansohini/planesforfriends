@@ -91,7 +91,7 @@
       selectable: false,
       legendItems: [
         { tone: 'rental', label: 'Rental' },
-        { tone: 'paid', label: 'Rental — paid' },
+        { tone: 'paid', label: 'Rental, paid' },
         { tone: 'block', label: 'Blocked off' },
         { tone: 'cancelled', label: 'Cancelled' },
       ],
@@ -292,7 +292,7 @@
           el(
             'td',
             {},
-            isBlock ? el('span', { class: 'badge badge-warn' }, 'Blocked off') : el('div', {}, r.renterName || '—'),
+            isBlock ? el('span', { class: 'badge badge-warn' }, 'Blocked off') : el('div', {}, r.renterName || 'none'),
             isBlock ? null : el('div', { class: 'tiny' }, r.renterPhone || ''),
             isBlock ? null : el('div', { class: 'tiny muted' }, r.renterEmail || ''),
             r.notes ? el('div', { class: 'tiny muted' }, `“${r.notes}”`) : null
@@ -368,8 +368,8 @@
       step: '0.01',
       min: '0',
       class: 'amount-inline',
-      placeholder: '—',
-      title: 'How much the renter paid — type a number and tab away to save',
+      placeholder: '0.00',
+      title: 'How much the renter paid. Type a number and tab away to save.',
       value: amountValue(reservation.paidAmount),
     });
     wrap.append(input);
@@ -399,7 +399,7 @@
     const input = el('input', {
       class: 'notes-inline',
       placeholder: 'Add a note…',
-      title: 'Owner-only note — renters never see this',
+      title: 'Owner-only note. Renters never see this.',
       value: reservation.adminNotes || '',
     });
     let last = input.value;
@@ -431,8 +431,8 @@
       step: '0.1',
       min: '0',
       class: 'hobbs-inline',
-      placeholder: '—',
-      title: 'Hobbs time — type a number and tab away to save',
+      placeholder: '0.0',
+      title: 'Hobbs time. Type a number and tab away to save.',
       value: reservation.hobbsTime == null ? '' : String(reservation.hobbsTime),
     });
     let last = input.value;
@@ -680,7 +680,7 @@
         `• ${reservation.renterName}'s reservation is cancelled\n` +
         '• the time is blocked off for you\n' +
         `• they will see it as cancelled when they look up ${reservation.confirmationId}\n\n` +
-        'You should call them afterwards — the site does not send messages.'
+        'They will get an email about it, but you should call them as well.'
     );
     if (!confirmed) return;
     try {
@@ -703,12 +703,12 @@
       el(
         'dl',
         { class: 'detail-list' },
-        el('div', { class: 'detail-row' }, el('dt', {}, 'Renter'), el('dd', {}, reservation.renterName || '—')),
+        el('div', { class: 'detail-row' }, el('dt', {}, 'Renter'), el('dd', {}, reservation.renterName || 'none')),
         el(
           'div',
           { class: 'detail-row' },
           el('dt', {}, 'Phone'),
-          el('dd', {}, digits ? el('a', { href: `tel:${digits}`, style: 'font-size:1.15rem;font-weight:700' }, phone) : '—')
+          el('dd', {}, digits ? el('a', { href: `tel:${digits}`, style: 'font-size:1.15rem;font-weight:700' }, phone) : 'none')
         ),
         el(
           'div',
@@ -719,7 +719,7 @@
             {},
             reservation.renterEmail
               ? el('a', { href: `mailto:${reservation.renterEmail}` }, reservation.renterEmail)
-              : '—'
+              : 'none'
           )
         ),
         el('div', { class: 'detail-row' }, el('dt', {}, 'Was'), el('dd', {}, formatRange(reservation.start, reservation.end)))
@@ -771,9 +771,9 @@
           {},
           el('td', { class: 'mono' }, plane.tailNumber),
           el('td', {}, plane.ownerName),
-          el('td', {}, plane.model || '—'),
-          el('td', {}, plane.nickname || '—'),
-          el('td', { class: 'tiny muted' }, plane.notes || '—'),
+          el('td', {}, plane.model || 'none'),
+          el('td', {}, plane.nickname || 'none'),
+          el('td', { class: 'tiny muted' }, plane.notes || 'none'),
           el('td', {}, el('span', { class: `badge ${plane.active ? 'badge-good' : 'badge-grey'}` }, plane.active ? 'Listed' : 'Hidden')),
           el(
             'td',
@@ -800,7 +800,7 @@
         },
       });
       $('#plane-form').reset();
-      showMessage($('#plane-msg'), 'Plane added — it is live on the owner’s page now.', 'ok');
+      showMessage($('#plane-msg'), 'Plane added. It is live on the owner’s page now.', 'ok');
       await reloadAll();
     } catch (err) {
       showMessage($('#plane-msg'), err.message);
@@ -906,12 +906,12 @@
           el(
             'td',
             {},
-            el('div', {}, owner.contactPhone || '—'),
+            el('div', {}, owner.contactPhone || 'none'),
             owner.managerName
               ? el('div', { class: 'tiny muted' }, `via ${owner.managerName}`)
               : null
           ),
-          el('td', { class: 'tiny' }, owner.email || '—'),
+          el('td', { class: 'tiny' }, owner.email || 'none'),
           el(
             'td',
             { class: 'tiny' },
@@ -1010,7 +1010,7 @@
           testBtn.disabled = true;
           try {
             const result = await api(`/api/admin/owners/${owner.id}/test-email`, { method: 'POST' });
-            showMessage(notifyMsg, `Sent to ${result.sent} ${result.sent === 1 ? 'person' : 'people'}. Check the inbox — and the spam folder.`, 'ok');
+            showMessage(notifyMsg, `Sent to ${result.sent} ${result.sent === 1 ? 'person' : 'people'}. Check the inbox, and the spam folder too.`, 'ok');
           } catch (err) {
             showMessage(notifyMsg, err.message);
           } finally {
@@ -1058,7 +1058,7 @@
         ),
         state.mail && state.mail.ready
           ? testBtn
-          : el('p', { class: 'field-hint' }, 'Email sending is not set up yet — see the Settings tab.'),
+          : el('p', { class: 'field-hint' }, 'Email sending is not set up yet. See the Settings tab.'),
         notifyMsg
       ),
       modalMsg
@@ -1138,7 +1138,7 @@
     const mail = state.mail || {};
     const line = $('#mail-status');
     if (mail.ready) {
-      line.textContent = `Working — sent through ${mail.provider} as ${mail.fromEmail}. People to notify are set per owner, on the Owners tab.`;
+      line.textContent = `Working. Sent through ${mail.provider} as ${mail.fromEmail}. People to notify are set per owner, on the Owners tab.`;
       line.className = 'field-hint msg-ok-text';
       return;
     }
@@ -1148,7 +1148,7 @@
         `No email key on the server yet, so nothing is being sent. On the machine, run: ` +
         `sudo bash deploy/set-email-key.sh brevo YOUR-KEY`;
     } else {
-      line.textContent = 'Almost there — fill in the address emails come from below and save.';
+      line.textContent = 'Almost there. Fill in the address emails come from below and save.';
     }
   }
 

@@ -69,7 +69,7 @@ function parseNotifyEmails(value) {
     if (!EMAIL_RE.test(address)) throw new HttpError(400, `“${entry.trim()}” does not look like an email address.`);
     if (!out.includes(address)) out.push(address);
   }
-  if (out.length > 20) throw new HttpError(400, 'That is more than 20 people to notify — trim the list.');
+  if (out.length > 20) throw new HttpError(400, 'That is more than 20 people to notify. Trim the list.');
   return out;
 }
 
@@ -135,7 +135,7 @@ function validateManager(ownerId, managerId) {
   const id = Number(managerId);
   if (!Number.isFinite(id)) throw new HttpError(400, 'Pick a valid manager.');
   if (ownerId != null && id === Number(ownerId)) {
-    throw new HttpError(400, 'Somebody cannot manage their own rentals — leave the manager empty instead.');
+    throw new HttpError(400, 'Somebody cannot manage their own rentals. Leave the manager empty instead.');
   }
   const manager = db.prepare('SELECT id, name, manager_id FROM owners WHERE id = ?').get(id);
   if (!manager) throw new HttpError(400, 'Pick a valid manager.');

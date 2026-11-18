@@ -127,7 +127,7 @@
     if (!state.selection) {
       summary.className = 'muted';
       summary.style.margin = '0';
-      summary.textContent = 'Nothing picked yet — tap a start time on the calendar above.';
+      summary.textContent = 'Nothing picked yet. Tap a start time on the calendar above.';
       detail.classList.add('hidden');
       startInput.value = '';
       endInput.value = '';
@@ -137,7 +137,7 @@
     summary.className = '';
     summary.replaceChildren(
       el('strong', { style: 'font-size:1.15rem' }, formatRange(start, end)),
-      el('span', {}, ` — ${durationLabel(start, end)}`)
+      el('span', {}, `, ${durationLabel(start, end)}`)
     );
     detail.classList.remove('hidden');
     startInput.value = toLocalInput(start);

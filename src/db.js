@@ -199,7 +199,7 @@ function bootstrap() {
         '',
         `    ${generated}`,
         '',
-        'Write it down — this is the only time it is shown.',
+        'Write it down. This is the only time it is shown.',
         'You can change it any time at /admin under Settings.',
       ]);
     }

@@ -20,7 +20,7 @@ function createWeekCalendar(options) {
     onNotice = () => {},
     onEmptyClick = null,
     legendItems = [
-      { tone: 'free', label: 'Open — tap to pick' },
+      { tone: 'free', label: 'Open, tap to pick' },
       { tone: 'busy', label: 'Already booked' },
       { tone: 'past', label: 'Past' },
       { tone: 'selected', label: 'Your time' },
