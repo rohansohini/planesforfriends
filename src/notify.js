@@ -168,23 +168,41 @@ function planeLabel(r) {
   return [r.planeTail, r.planeModel].filter(Boolean).join(' · ');
 }
 
-function body(reservation, lines, origin) {
-  const who =
-    reservation.kind === 'block'
-      ? 'Blocked off (not a renter)'
-      : [reservation.renterName, reservation.renterPhone, reservation.renterEmail].filter(Boolean).join('\n        ');
-  const out = [
-    ...lines,
-    '',
-    `Plane:  ${planeLabel(reservation)} (${reservation.ownerName})`,
-    `When:   ${formatWhen(reservation)}`,
-    `Renter: ${who || '—'}`,
-    `Hobbs:  ${reservation.hobbsTime == null ? 'not logged yet' : reservation.hobbsTime}`,
-    `Paid:   ${reservation.paid ? 'yes' : 'no'}${reservation.paidAmount != null ? ` · ${money(reservation.paidAmount)}` : ''}`,
-    `Confirmation: ${reservation.confirmationId}`,
-  ];
+/**
+ * The owner's email. The subject already says what happened, so `lines` is only
+ * for things the facts below cannot show — what an edit changed, or that
+ * somebody needs a phone call. Every line stands on its own rather than relying
+ * on lined-up spaces, because some mail apps render plain text as HTML and
+ * collapse the padding.
+ */
+function body(reservation, lines = []) {
+  const out = [];
+  if (lines.length) out.push(...lines, '');
+  out.push(`Plane: ${planeLabel(reservation)} (${reservation.ownerName})`);
+  out.push(`When: ${formatWhen(reservation)}`);
+  if (reservation.kind === 'block') {
+    out.push('Renter: none — this is time blocked off');
+  } else {
+    out.push(`Renter: ${reservation.renterName || '—'}`);
+    if (reservation.renterPhone) out.push(`Phone: ${reservation.renterPhone}`);
+    if (reservation.renterEmail) out.push(`Email: ${reservation.renterEmail}`);
+  }
+  out.push(`Hobbs: ${reservation.hobbsTime == null ? 'not logged yet' : reservation.hobbsTime}`);
+  out.push(
+    `Paid: ${reservation.paid ? 'yes' : 'no'}${reservation.paidAmount != null ? ` · ${money(reservation.paidAmount)}` : ''}`
+  );
+  out.push(`Confirmation: ${reservation.confirmationId}`);
   if (reservation.adminNotes) out.push(`Owner note: ${reservation.adminNotes}`);
-  if (origin) out.push('', `Admin console: ${origin}/admin`);
+  // Name only what is actually still outstanding, so the reminder stops asking
+  // for a Hobbs reading that has already come in.
+  if (reservation.kind === 'rental' && reservation.status === 'confirmed') {
+    const missing = [];
+    if (reservation.hobbsTime == null) missing.push('the Hobbs time');
+    if (!reservation.paid) missing.push('the payment');
+    if (missing.length) {
+      out.push('', `Once the flight is done, put ${missing.join(' and ')} into the admin page.`);
+    }
+  }
   out.push('', 'You are getting this because you are on the notify list for this owner’s planes.');
   return out.join('\n');
 }
@@ -239,68 +257,43 @@ function queue(ownerIds, subject, text) {
 
 const subjectFor = (r, what) => `${r.planeTail} · ${what}`;
 
-function reservationCreated(reservation, { origin = '', byAdmin = false } = {}) {
+function reservationCreated(reservation) {
   const what = reservation.kind === 'block' ? 'time blocked off' : 'new booking';
-  queue(
-    [reservation.ownerId],
-    subjectFor(reservation, what),
-    body(
-      reservation,
-      [
-        reservation.kind === 'block'
-          ? `${reservation.planeTail} has been blocked off.`
-          : `${reservation.renterName || 'Someone'} booked ${reservation.planeTail}.`,
-        byAdmin ? 'Entered in the admin console.' : 'Booked on the website.',
-      ],
-      origin
-    )
-  );
+  queue([reservation.ownerId], subjectFor(reservation, what), body(reservation));
 }
 
-function reservationChanged(before, after, { origin = '' } = {}) {
+function reservationChanged(before, after) {
   const changes = describeChange(before, after);
   if (!changes.length) return;
   const cancelled = before.status === 'confirmed' && after.status === 'cancelled';
   queue(
     [before.ownerId, after.ownerId],
     subjectFor(after, cancelled ? 'reservation cancelled' : 'reservation changed'),
-    body(after, [`${after.confirmationId} was changed:`, ...changes.map((c) => `  • ${c}`)], origin)
+    body(after, [`${after.confirmationId} was changed:`, ...changes.map((c) => `  • ${c}`)])
   );
 }
 
-function reservationDeleted(reservation, { origin = '' } = {}) {
+function reservationDeleted(reservation) {
   queue(
     [reservation.ownerId],
     subjectFor(reservation, 'reservation deleted'),
-    body(reservation, [`${reservation.confirmationId} was deleted from the schedule.`], origin)
+    body(reservation, [`${reservation.confirmationId} was deleted from the schedule.`])
   );
 }
 
-function timeTakenBack(cancelled, block, { origin = '' } = {}) {
+function timeTakenBack(cancelled, block) {
   queue(
     [cancelled.ownerId],
     subjectFor(cancelled, 'time taken back'),
-    body(
-      cancelled,
-      [
-        `${cancelled.renterName || 'A renter'} was cancelled and the time is now blocked off.`,
-        'Somebody should call them — the site does not send messages to renters.',
-      ],
-      origin
-    )
+    body(cancelled, [
+      `${cancelled.renterName || 'A renter'} was cancelled and the time is now blocked off.`,
+      'They have been emailed, but somebody should call them as well.',
+    ])
   );
 }
 
-function hobbsLogged(reservation, { origin = '' } = {}) {
-  queue(
-    [reservation.ownerId],
-    subjectFor(reservation, `Hobbs time ${reservation.hobbsTime}`),
-    body(
-      reservation,
-      [`${reservation.renterName || 'A renter'} logged a Hobbs time of ${reservation.hobbsTime}.`],
-      origin
-    )
-  );
+function hobbsLogged(reservation) {
+  queue([reservation.ownerId], subjectFor(reservation, `Hobbs time ${reservation.hobbsTime}`), body(reservation));
 }
 
 /* ---------- the renter's own emails ---------- */
@@ -408,7 +401,8 @@ function renterCancelledNotice(reservation, { origin = '', takenBack = false } =
   );
 }
 
-async function sendTest(owner, origin) {  if (!owner.notifyEmails.length) {
+async function sendTest(owner, origin) {
+  if (!owner.notifyEmails.length) {
     return { sent: 0, skipped: 0, error: `Nobody is on ${owner.name}'s notify list yet.` };
   }
   return sendTo(
