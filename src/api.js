@@ -4,7 +4,8 @@ const { allSettings, getSetting, setSetting, DEFAULT_SETTINGS } = require('./db'
 const store = require('./store');
 const { HttpError } = store;
 const auth = require('./auth');
-const { tidyPhone } = require('../public/js/format.js');
+const notify = require('./notify');
+const { tidyPhone, tidyEmail } = require('../public/js/format.js');
 
 /* ---------- rental instructions ---------- */
 
@@ -156,6 +157,8 @@ function publicSettings() {
     openHour: Number(s.open_hour),
     closeHour: Number(s.close_hour),
     maxDaysAhead: Number(s.max_days_ahead),
+    notifyFromName: s.notify_from_name,
+    notifyFromEmail: s.notify_from_email,
   };
 }
 
@@ -166,6 +169,11 @@ const paidFilter = (v) => (v === '1' ? true : v === '0' ? false : null);
 
 async function handleApi(req, res, ctx) {
   const { pathname, query, body, method, send } = ctx;
+
+  // Used to put a working link to the admin console in notification emails.
+  const origin = req.headers.host
+    ? `${req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http'}://${req.headers.host}`
+    : '';
 
   /* ----- public ----- */
 
@@ -225,6 +233,7 @@ async function handleApi(req, res, ctx) {
       notes: body.notes,
       kind: 'rental',
     });
+    notify.reservationCreated(reservation, { origin });
     return send(201, renterView(reservation));
   }
 
@@ -239,6 +248,7 @@ async function handleApi(req, res, ctx) {
   const hobbsMatch = pathname.match(/^\/api\/reservations\/([A-Za-z0-9-]+)\/(?:hobbs|tach)$/);
   if (hobbsMatch && method === 'POST') {
     const reservation = store.logHobbsTime(hobbsMatch[1], body.hobbsTime ?? body.tachTime);
+    notify.hobbsLogged(reservation, { origin });
     return send(200, renterView(reservation));
   }
 
@@ -272,6 +282,7 @@ async function handleApi(req, res, ctx) {
       owners: store.listOwners({ includeInactive: true }),
       planes: store.listPlanes({ includeInactive: true }),
       settings: publicSettings(),
+      mail: notify.mailStatus(),
     });
   }
 
@@ -304,22 +315,42 @@ async function handleApi(req, res, ctx) {
       { asAdmin: true }
     );
     if (body.hobbsTime !== undefined && body.hobbsTime !== null && body.hobbsTime !== '') {
-      return send(201, store.updateReservation(reservation.id, { hobbsTime: body.hobbsTime }));
+      const withHobbs = store.updateReservation(reservation.id, { hobbsTime: body.hobbsTime });
+      notify.reservationCreated(withHobbs, { origin, byAdmin: true });
+      return send(201, withHobbs);
     }
+    notify.reservationCreated(reservation, { origin, byAdmin: true });
     return send(201, reservation);
   }
 
   const takeBackMatch = pathname.match(/^\/api\/admin\/reservations\/(\d+)\/take-back$/);
   if (takeBackMatch && method === 'POST') {
-    return send(200, store.takeBackTime(Number(takeBackMatch[1]), { notes: body.notes }));
+    const result = store.takeBackTime(Number(takeBackMatch[1]), { notes: body.notes });
+    notify.timeTakenBack(result.cancelled, result.block, { origin });
+    return send(200, result);
   }
 
   const adminResMatch = pathname.match(/^\/api\/admin\/reservations\/(\d+)$/);
   if (adminResMatch && method === 'PATCH') {
-    return send(200, store.updateReservation(Number(adminResMatch[1]), body));
+    const before = store.getReservation(Number(adminResMatch[1]));
+    const after = store.updateReservation(Number(adminResMatch[1]), body);
+    if (before) notify.reservationChanged(before, after, { origin });
+    return send(200, after);
   }
   if (adminResMatch && method === 'DELETE') {
-    return send(200, store.deleteReservation(Number(adminResMatch[1])));
+    const before = store.getReservation(Number(adminResMatch[1]));
+    const result = store.deleteReservation(Number(adminResMatch[1]));
+    if (before) notify.reservationDeleted(before, { origin });
+    return send(200, result);
+  }
+
+  const testNotifyMatch = pathname.match(/^\/api\/admin\/owners\/(\d+)\/test-email$/);
+  if (testNotifyMatch && method === 'POST') {
+    const owner = store.getOwner(Number(testNotifyMatch[1]));
+    if (!owner) throw new HttpError(404, 'Owner not found.');
+    const result = await notify.sendTest(owner, origin);
+    if (!result.sent) throw new HttpError(400, result.error || 'Nothing was sent.');
+    return send(200, result);
   }
 
   if (pathname === '/api/admin/owners' && method === 'POST') {
@@ -351,7 +382,9 @@ async function handleApi(req, res, ctx) {
     const allowed = Object.keys(DEFAULT_SETTINGS);
     for (const [key, value] of Object.entries(body || {})) {
       if (!allowed.includes(key)) continue;
-      setSetting(key, key === 'ops_contact_phone' ? tidyPhone(value) : value);
+      if (key === 'ops_contact_phone') setSetting(key, tidyPhone(value));
+      else if (key === 'notify_from_email') setSetting(key, tidyEmail(value));
+      else setSetting(key, value);
     }
     return send(200, allSettings());
   }

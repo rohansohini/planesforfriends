@@ -234,6 +234,15 @@
               </p>
             </div>
           </div>
+          <div class="field">
+            <label for="owner-notify">Who to notify about this owner's planes (optional)</label>
+            <textarea id="owner-notify" rows="3" placeholder="one email address per line"></textarea>
+            <p class="field-hint">
+              One email address per line. These people get an email whenever anything happens to
+              this owner's planes — a new booking, a change, a cancellation, a Hobbs time or a
+              payment. The emails include the renter's name and phone number.
+            </p>
+          </div>
           <div id="owner-msg" class="hidden"></div>
           <button type="submit">Add owner</button>
         </form>
@@ -244,7 +253,7 @@
         <div class="table-scroll">
           <table>
             <thead>
-              <tr><th>Name</th><th>Page</th><th>Renters contact</th><th>Email</th><th>Planes</th><th>Listed</th><th></th></tr>
+              <tr><th>Name</th><th>Page</th><th>Renters contact</th><th>Email</th><th>Notify</th><th>Planes</th><th>Listed</th><th></th></tr>
             </thead>
             <tbody id="owners-body"></tbody>
           </table>
@@ -281,6 +290,18 @@
             Instruction 4 on every confirmation. When somebody else handles an owner’s renting,
             that manager is used instead — so a renter always calls the person looking after the plane.
           </p>
+          <h3 style="margin:1.6rem 0 0.4rem">Notification emails</h3>
+          <p id="mail-status" class="field-hint" style="margin:0 0 0.9rem"></p>
+          <div class="field-row">
+            <div class="field">
+              <label for="set-notify-name">Emails come from (name)</label>
+              <input id="set-notify-name" placeholder="Planes for Rent">
+            </div>
+            <div class="field">
+              <label for="set-notify-email">Emails come from (address)</label>
+              <input id="set-notify-email" type="email" placeholder="you@gmail.com">
+            </div>
+          </div>
           <div class="field-row">
             <div class="field">
               <label for="set-open">Calendar starts at (hour, 0–23)</label>

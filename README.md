@@ -161,18 +161,53 @@ Sign in at `/admin` with the shared password.
     fielding calls for Vinod's plane is the case this exists for. Managers are one level deep:
     somebody who is managed cannot manage, and a manager cannot be deleted while they still
     cover for someone.
+  - **Who to notify** is that owner's email list, one address per line, with a test button. See
+    [Notifications](#notifications).
 - **Settings** — site title, the "problems" contact name and number (used only for owners who do
   their own renting — a managed owner's renters are pointed at the manager), the export time zone,
   the hours the calendar shows (5am–midnight by default), how far ahead renters can book, and the
   admin password.
+
+## Notifications
+
+Each owner has a list of people to email — nobody by default. When anything happens to one of
+that owner's planes, everyone on their list gets a message: a new booking, a change, a
+cancellation, time taken back, a Hobbs reading, a payment. The email says what changed in plain
+words ("Hobbs time set to 3.2", "Marked paid", "Amount recorded: $240.00") and carries the
+renter's name and phone number, so a list should only hold people you would hand that to.
+
+Set the list in Admin → Owners → Edit, one address per line, with a **Send a test email** button
+beside it. Nothing is ever sent to renters.
+
+Sending goes through a mail provider's HTTPS API, so there is still no dependency to install:
+
+```bash
+# on the server, once
+sudo bash deploy/set-email-key.sh brevo xkeysib-your-key
+sudo bash deploy/set-email-key.sh --off      # stop sending again
+```
+
+The key is written to `/etc/planesforfriends.env`, readable only by root, and the service picks
+it up through `EnvironmentFile`. It never touches the database, the repo or a backup. Then set
+the address emails come from in Admin → Settings — it has to be one the provider has verified.
+
+**Brevo** is the default because it verifies a single sender address by emailing you a link,
+which works without owning a domain — the case on a `duckdns.org` hostname. `resend` is also
+supported and is the better choice once there is a real domain to verify. `console` prints
+messages to the log instead of sending, for development.
+
+With no key set, every notification is quietly skipped: the site behaves exactly as it did
+before, and a booking never fails because an email could not go out. Sends are fire-and-forget
+and go one address at a time, so recipients never see each other's addresses and a provider
+outage is a line in the log rather than a broken booking.
 
 ## Notes and limits
 
 - **Payment is tracked, not processed.** Money changes hands however the owners already do it;
   the site just records who has paid and how much. Amounts are plain dollars — no tax, fees or
   rates are calculated anywhere.
-- **No notifications.** Nothing is texted or emailed; the confirmation is shown on screen, and
-  owners see new bookings when they open the admin page.
+- **Renters are never notified.** Nothing is texted or emailed to a renter; the confirmation is
+  shown on screen. Owners can have their own people emailed — see below.
 - **Times display in each browser's local time zone.** The time zone in Settings is used for the
   CSV export only. If everyone is in the same time zone (the normal case), the two agree.
 - **One shared admin password**, hashed with scrypt, session cookie good for 12 hours. Fine for
@@ -188,6 +223,7 @@ server.js            HTTP server, page routes, static files
 src/db.js            SQLite schema, settings, password hashing
 src/store.js         owners / planes / reservations, conflict checks
 src/api.js           JSON API, instructions, CSV export
+src/notify.js        notification emails: who gets them, what they say, how they are sent
 src/auth.js          admin sessions
 public/              index.html, rent.html, lookup.html, admin.html + css/js
 public/docs/         rental policy PDFs linked from the home page
@@ -197,6 +233,7 @@ scripts/seed.js      starting owners and planes
 scripts/backup.js    snapshot of the live database
 scripts/tidy-contacts.js  one-time clean-up of contacts saved before the formatting existed
 deploy/update.sh     back up, pull, reinstall, restart, verify
+deploy/set-email-key.sh    store the mail provider's key on the server, outside the repo
 deploy/duckdns-refresh.sh  weekly job keeping the free hostname pointed at the machine
 Dockerfile           for Fly.io or any container host
 render.yaml          Render blueprint, disk included

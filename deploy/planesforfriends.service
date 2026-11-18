@@ -9,6 +9,9 @@ WorkingDirectory=/opt/planesforfriends
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=PFF_DATA_DIR=/var/lib/planesforfriends
+# Secrets (the email API key) live here, not in the repo. The leading "-" means
+# "carry on if the file is missing", so the site still starts without it.
+EnvironmentFile=-/etc/planesforfriends.env
 ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning server.js
 Restart=always
 RestartSec=3

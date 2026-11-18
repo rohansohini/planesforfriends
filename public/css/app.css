@@ -215,6 +215,8 @@ button.small, .btn.small { min-height: 2.5rem; padding: 0.35rem 0.85rem; font-si
 }
 .msg-error { background: var(--bad-soft); color: var(--bad); border-color: #e8bab5; }
 .msg-ok { background: var(--good-soft); color: var(--good); border-color: #b3ddca; }
+/* A line of plain text that reports something is working, with no box round it. */
+.msg-ok-text { color: var(--good); font-weight: 600; }
 .msg-info { background: var(--sky-soft); color: var(--sky-dark); border-color: var(--sky-line); }
 
 /* ---------- badges ---------- */

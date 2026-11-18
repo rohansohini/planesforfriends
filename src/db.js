@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS owners (
   name        TEXT    NOT NULL,
   phone       TEXT    NOT NULL DEFAULT '',
   email       TEXT    NOT NULL DEFAULT '',
+  notify_emails TEXT  NOT NULL DEFAULT '',
   manager_id  INTEGER REFERENCES owners(id) ON DELETE SET NULL,
   active      INTEGER NOT NULL DEFAULT 1,
   created_at  INTEGER NOT NULL
@@ -87,6 +88,7 @@ addColumnIfMissing('reservations', 'paid_at', 'INTEGER');
 addColumnIfMissing('reservations', 'paid_amount', 'REAL');
 addColumnIfMissing('reservations', 'admin_notes', "TEXT NOT NULL DEFAULT ''");
 addColumnIfMissing('owners', 'manager_id', 'INTEGER REFERENCES owners(id) ON DELETE SET NULL');
+addColumnIfMissing('owners', 'notify_emails', "TEXT NOT NULL DEFAULT ''");
 
 /* The readings were always Hobbs; only the label was wrong. Rename the columns
    in place — the numbers themselves are untouched. */
@@ -131,6 +133,10 @@ const DEFAULT_SETTINGS = {
   close_hour: '24',
   max_days_ahead: '180',
   site_title: 'Planes for Rent',
+  // Who notification emails come from. The address has to be one the mail
+  // provider has verified, or it will refuse to send.
+  notify_from_name: 'Planes for Rent',
+  notify_from_email: '',
 };
 
 function getSetting(key, fallback = null) {

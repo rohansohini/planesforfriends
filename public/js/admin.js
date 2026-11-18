@@ -5,6 +5,7 @@
     owners: [],
     planes: [],
     settings: null,
+    mail: { ready: false },
     reservations: [],
     calendar: null,
     filters: { planeId: '', from: null, to: null, paid: '' },
@@ -54,6 +55,7 @@
     state.owners = data.owners;
     state.planes = data.planes;
     state.settings = data.settings;
+    state.mail = data.mail || { ready: false };
     renderPlaneSelects();
     renderPlanes();
     renderOwners();
@@ -910,6 +912,17 @@
               : null
           ),
           el('td', { class: 'tiny' }, owner.email || '—'),
+          el(
+            'td',
+            { class: 'tiny' },
+            owner.notifyEmails && owner.notifyEmails.length
+              ? el(
+                  'div',
+                  { title: owner.notifyEmails.join('\n') },
+                  `${owner.notifyEmails.length} ${owner.notifyEmails.length === 1 ? 'person' : 'people'}`
+                )
+              : el('span', { class: 'muted' }, 'nobody')
+          ),
           el('td', {}, String(planeCount)),
           el('td', {}, el('span', { class: `badge ${owner.active ? 'badge-good' : 'badge-grey'}` }, owner.active ? 'Live' : 'Hidden')),
           el(
@@ -950,6 +963,7 @@
           phone: $('#owner-phone').value,
           email: $('#owner-email').value,
           slug: $('#owner-slug').value,
+          notifyEmails: $('#owner-notify').value,
           managerId: $('#owner-managed').checked ? $('#owner-manager').value || null : null,
         },
       });
@@ -980,6 +994,32 @@
       class: 'paid-box',
       checked: !!owner.managerId || undefined,
     });
+    const notifyBox = el('textarea', { rows: '3', placeholder: 'one email address per line' },
+      (owner.notifyEmails || []).join('\n'));
+    const notifyMsg = el('div', { class: 'hidden' });
+    const testBtn = el(
+      'button',
+      {
+        type: 'button',
+        class: 'secondary small',
+        onclick: async () => {
+          showMessage(notifyMsg, '');
+          if (notifyBox.value.trim() !== (owner.notifyEmails || []).join('\n')) {
+            return showMessage(notifyMsg, 'Save your changes first, then send the test.');
+          }
+          testBtn.disabled = true;
+          try {
+            const result = await api(`/api/admin/owners/${owner.id}/test-email`, { method: 'POST' });
+            showMessage(notifyMsg, `Sent to ${result.sent} ${result.sent === 1 ? 'person' : 'people'}. Check the inbox — and the spam folder.`, 'ok');
+          } catch (err) {
+            showMessage(notifyMsg, err.message);
+          } finally {
+            testBtn.disabled = false;
+          }
+        },
+      },
+      'Send a test email'
+    );
     const managerWrap = el(
       'div',
       { class: owner.managerId ? '' : 'hidden' },
@@ -1005,6 +1045,22 @@
         managerWrap
       ),
       el('div', { class: 'field' }, el('label', {}, 'Visibility'), active),
+      el(
+        'div',
+        { class: 'field' },
+        el('label', {}, `Who to notify about ${owner.name}'s planes`),
+        notifyBox,
+        el(
+          'p',
+          { class: 'field-hint' },
+          'One email address per line. They are told about every booking, change, cancellation, ' +
+            'Hobbs time and payment on these planes, renter contact details included.'
+        ),
+        state.mail && state.mail.ready
+          ? testBtn
+          : el('p', { class: 'field-hint' }, 'Email sending is not set up yet — see the Settings tab.'),
+        notifyMsg
+      ),
       modalMsg
     );
 
@@ -1042,6 +1098,7 @@
             slug: slug.value,
             phone: phone.value,
             email: email.value,
+            notifyEmails: notifyBox.value,
             managerId: managedBox.checked ? managerSelect.value || null : null,
             active: active.value === 'yes',
           },
@@ -1069,6 +1126,29 @@
     $('#set-open').value = s.openHour;
     $('#set-close').value = s.closeHour;
     $('#set-ahead').value = s.maxDaysAhead;
+    $('#set-notify-name').value = s.notifyFromName || '';
+    $('#set-notify-email').value = s.notifyFromEmail || '';
+    renderMailStatus();
+  }
+
+  /* Says in plain words which half of the email setup is missing: the key lives
+     on the server, the sender address lives here. */
+  function renderMailStatus() {
+    const mail = state.mail || {};
+    const line = $('#mail-status');
+    if (mail.ready) {
+      line.textContent = `Working — sent through ${mail.provider} as ${mail.fromEmail}. People to notify are set per owner, on the Owners tab.`;
+      line.className = 'field-hint msg-ok-text';
+      return;
+    }
+    line.className = 'field-hint';
+    if (!mail.hasKey) {
+      line.textContent =
+        `No email key on the server yet, so nothing is being sent. On the machine, run: ` +
+        `sudo bash deploy/set-email-key.sh brevo YOUR-KEY`;
+    } else {
+      line.textContent = 'Almost there — fill in the address emails come from below and save.';
+    }
   }
 
   $('#settings-form').addEventListener('submit', async (event) => {
@@ -1090,6 +1170,8 @@
           open_hour: String(openHour),
           close_hour: String(closeHour),
           max_days_ahead: String(Number($('#set-ahead').value) || 180),
+          notify_from_name: $('#set-notify-name').value.trim() || 'Planes for Rent',
+          notify_from_email: $('#set-notify-email').value.trim(),
         },
       });
       showMessage($('#settings-msg'), 'Saved.', 'ok');

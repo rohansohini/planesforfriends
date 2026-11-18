@@ -52,6 +52,27 @@ function uniqueSlug(name, excludeId = null) {
   }
 }
 
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+/**
+ * The people an owner wants told when anything happens to their planes, kept as
+ * one address per line. A list rather than a table because that is all it is:
+ * adding somebody is a new line, removing them is deleting one.
+ */
+function parseNotifyEmails(value) {
+  if (value == null) return null;
+  const raw = Array.isArray(value) ? value : String(value).split(/[\n,;]+/);
+  const out = [];
+  for (const entry of raw) {
+    const address = tidyEmail(entry);
+    if (!address) continue;
+    if (!EMAIL_RE.test(address)) throw new HttpError(400, `“${entry.trim()}” does not look like an email address.`);
+    if (!out.includes(address)) out.push(address);
+  }
+  if (out.length > 20) throw new HttpError(400, 'That is more than 20 people to notify — trim the list.');
+  return out;
+}
+
 const bool = (v) => (v ? 1 : 0);
 
 /**
@@ -88,6 +109,7 @@ function mapOwner(row) {
     name: row.name,
     phone: row.phone,
     email: row.email,
+    notifyEmails: row.notify_emails ? row.notify_emails.split('\n').filter(Boolean) : [],
     managerId: row.manager_id ?? null,
     managerName: row.manager_name ?? null,
     managerPhone: row.manager_phone ?? null,
@@ -144,16 +166,18 @@ function getOwner(id) {
   return mapOwner(db.prepare(`${OWNER_SELECT} WHERE o.id = ?`).get(Number(id)));
 }
 
-function createOwner({ name, phone = '', email = '', slug = '', managerId = null }) {
+function createOwner({ name, phone = '', email = '', slug = '', managerId = null, notifyEmails = null }) {
   const finalName = String(name || '').trim();
   if (!finalName) throw new HttpError(400, 'Owner name is required.');
   const finalSlug = uniqueSlug(slug || finalName);
   const manager = validateManager(null, managerId);
+  const notify = parseNotifyEmails(notifyEmails) || [];
   const info = db
     .prepare(
-      'INSERT INTO owners (slug, name, phone, email, manager_id, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)'
+      `INSERT INTO owners (slug, name, phone, email, notify_emails, manager_id, active, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?)`
     )
-    .run(finalSlug, finalName, tidyPhone(phone), tidyEmail(email), manager, Date.now());
+    .run(finalSlug, finalName, tidyPhone(phone), tidyEmail(email), notify.join('\n'), manager, Date.now());
   return getOwner(info.lastInsertRowid);
 }
 
@@ -165,13 +189,15 @@ function updateOwner(id, patch) {
   const slug = patch.slug !== undefined ? uniqueSlug(patch.slug || name, owner.id) : owner.slug;
   const manager =
     patch.managerId !== undefined ? validateManager(owner.id, patch.managerId) : owner.managerId;
+  const notify = patch.notifyEmails !== undefined ? parseNotifyEmails(patch.notifyEmails) : owner.notifyEmails;
   db.prepare(
-    'UPDATE owners SET name = ?, slug = ?, phone = ?, email = ?, manager_id = ?, active = ? WHERE id = ?'
+    'UPDATE owners SET name = ?, slug = ?, phone = ?, email = ?, notify_emails = ?, manager_id = ?, active = ? WHERE id = ?'
   ).run(
     name,
     slug,
     patch.phone !== undefined ? tidyPhone(patch.phone) : owner.phone,
     patch.email !== undefined ? tidyEmail(patch.email) : owner.email,
+    (notify || []).join('\n'),
     manager,
     patch.active !== undefined ? bool(patch.active) : bool(owner.active),
     owner.id
