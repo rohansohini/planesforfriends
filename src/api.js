@@ -216,7 +216,7 @@ async function handleApi(req, res, ctx) {
       notes: body.notes,
       kind: 'rental',
     });
-    notify.reservationCreated(reservation);
+    notify.reservationCreated(reservation, { origin });
     notify.renterConfirmation(reservation, { origin });
     return send(201, renterView(reservation));
   }
@@ -232,7 +232,7 @@ async function handleApi(req, res, ctx) {
   const hobbsMatch = pathname.match(/^\/api\/reservations\/([A-Za-z0-9-]+)\/(?:hobbs|tach)$/);
   if (hobbsMatch && method === 'POST') {
     const reservation = store.logHobbsTime(hobbsMatch[1], body.hobbsTime ?? body.tachTime);
-    notify.hobbsLogged(reservation);
+    notify.hobbsLogged(reservation, { origin });
     return send(200, renterView(reservation));
   }
 
@@ -300,11 +300,11 @@ async function handleApi(req, res, ctx) {
     );
     if (body.hobbsTime !== undefined && body.hobbsTime !== null && body.hobbsTime !== '') {
       const withHobbs = store.updateReservation(reservation.id, { hobbsTime: body.hobbsTime });
-      notify.reservationCreated(withHobbs);
+      notify.reservationCreated(withHobbs, { origin, byAdmin: true });
       notify.renterConfirmation(withHobbs, { origin });
       return send(201, withHobbs);
     }
-    notify.reservationCreated(reservation);
+    notify.reservationCreated(reservation, { origin, byAdmin: true });
     notify.renterConfirmation(reservation, { origin });
     return send(201, reservation);
   }
@@ -312,7 +312,7 @@ async function handleApi(req, res, ctx) {
   const takeBackMatch = pathname.match(/^\/api\/admin\/reservations\/(\d+)\/take-back$/);
   if (takeBackMatch && method === 'POST') {
     const result = store.takeBackTime(Number(takeBackMatch[1]), { notes: body.notes });
-    notify.timeTakenBack(result.cancelled, result.block);
+    notify.timeTakenBack(result.cancelled, result.block, { origin });
     notify.renterCancelledNotice(result.cancelled, { origin, takenBack: true });
     return send(200, result);
   }
@@ -322,7 +322,7 @@ async function handleApi(req, res, ctx) {
     const before = store.getReservation(Number(adminResMatch[1]));
     const after = store.updateReservation(Number(adminResMatch[1]), body);
     if (before) {
-      notify.reservationChanged(before, after);
+      notify.reservationChanged(before, after, { origin });
       // The renter hears only about the things that affect them: a cancelled
       // booking, or one that moved. Hobbs readings and payments are the
       // owners' own bookkeeping.
@@ -338,7 +338,7 @@ async function handleApi(req, res, ctx) {
     const before = store.getReservation(Number(adminResMatch[1]));
     const result = store.deleteReservation(Number(adminResMatch[1]));
     if (before) {
-      notify.reservationDeleted(before);
+      notify.reservationDeleted(before, { origin });
       if (before.status === 'confirmed') notify.renterCancelledNotice(before, { origin });
     }
     return send(200, result);

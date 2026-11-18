@@ -169,41 +169,50 @@ function planeLabel(r) {
 }
 
 /**
- * The owner's email. The subject already says what happened, so `lines` is only
- * for things the facts below cannot show — what an edit changed, or that
- * somebody needs a phone call. Every line stands on its own rather than relying
- * on lined-up spaces, because some mail apps render plain text as HTML and
- * collapse the padding.
+ * The owner's email: a sentence saying what happened, then the facts in small
+ * blocks — the flight, the renter, the bookkeeping — and one link at the end.
+ *
+ * Each field is its own line rather than lined up with spaces, because some
+ * mail apps render plain text as HTML and collapse the padding, which ran the
+ * renter's phone and email together.
  */
-function body(reservation, lines = []) {
+function body(reservation, lines = [], origin = '') {
+  const block = reservation.kind === 'block';
   const out = [];
   if (lines.length) out.push(...lines, '');
+
   out.push(`Plane: ${planeLabel(reservation)} (${reservation.ownerName})`);
   out.push(`When: ${formatWhen(reservation)}`);
-  if (reservation.kind === 'block') {
-    out.push('Renter: none — this is time blocked off');
+  out.push(`Confirmation: ${reservation.confirmationId}`);
+
+  if (block) {
+    out.push('', 'Blocked off — no renter.');
   } else {
-    out.push(`Renter: ${reservation.renterName || '—'}`);
+    out.push('', `Renter: ${reservation.renterName || '—'}`);
     if (reservation.renterPhone) out.push(`Phone: ${reservation.renterPhone}`);
     if (reservation.renterEmail) out.push(`Email: ${reservation.renterEmail}`);
+    if (reservation.notes) out.push(`Their note: ${reservation.notes}`);
+
+    out.push('', `Hobbs: ${reservation.hobbsTime == null ? 'not logged yet' : reservation.hobbsTime}`);
+    out.push(
+      `Paid: ${reservation.paid ? 'yes' : 'no'}${reservation.paidAmount != null ? ` · ${money(reservation.paidAmount)}` : ''}`
+    );
   }
-  out.push(`Hobbs: ${reservation.hobbsTime == null ? 'not logged yet' : reservation.hobbsTime}`);
-  out.push(
-    `Paid: ${reservation.paid ? 'yes' : 'no'}${reservation.paidAmount != null ? ` · ${money(reservation.paidAmount)}` : ''}`
-  );
-  out.push(`Confirmation: ${reservation.confirmationId}`);
   if (reservation.adminNotes) out.push(`Owner note: ${reservation.adminNotes}`);
-  // Name only what is actually still outstanding, so the reminder stops asking
-  // for a Hobbs reading that has already come in.
-  if (reservation.kind === 'rental' && reservation.status === 'confirmed') {
-    const missing = [];
+
+  // One closing block with one labelled link. The reminder names only what is
+  // actually outstanding, so it stops asking for a Hobbs reading already in.
+  const missing = [];
+  if (!block && reservation.status === 'confirmed') {
     if (reservation.hobbsTime == null) missing.push('the Hobbs time');
     if (!reservation.paid) missing.push('the payment');
-    if (missing.length) {
-      out.push('', `Once the flight is done, put ${missing.join(' and ')} into the admin page.`);
-    }
   }
-  out.push('', 'You are getting this because you are on the notify list for this owner’s planes.');
+  out.push('');
+  if (missing.length === 2) out.push('Once the flight is done, record the Hobbs time and the payment.');
+  else if (missing.length === 1) out.push(`Still to record: ${missing[0]}.`);
+  out.push(origin ? `Admin page: ${origin}/admin` : 'Open the admin page to make any changes.');
+
+  out.push('', `You are on the notify list for ${reservation.ownerName}'s planes.`);
   return out.join('\n');
 }
 
@@ -257,43 +266,65 @@ function queue(ownerIds, subject, text) {
 
 const subjectFor = (r, what) => `${r.planeTail} · ${what}`;
 
-function reservationCreated(reservation) {
-  const what = reservation.kind === 'block' ? 'time blocked off' : 'new booking';
-  queue([reservation.ownerId], subjectFor(reservation, what), body(reservation));
+function reservationCreated(reservation, { origin = '', byAdmin = false } = {}) {
+  const who = reservation.renterName || 'Someone';
+  const opening =
+    reservation.kind === 'block'
+      ? `${reservation.planeTail} has been blocked off.`
+      : byAdmin
+        ? `A booking for ${reservation.planeTail} was entered in the admin console.`
+        : `${who} booked ${reservation.planeTail} on the website.`;
+  queue(
+    [reservation.ownerId],
+    subjectFor(reservation, reservation.kind === 'block' ? 'time blocked off' : 'new booking'),
+    body(reservation, [opening], origin)
+  );
 }
 
-function reservationChanged(before, after) {
+function reservationChanged(before, after, { origin = '' } = {}) {
   const changes = describeChange(before, after);
   if (!changes.length) return;
   const cancelled = before.status === 'confirmed' && after.status === 'cancelled';
   queue(
     [before.ownerId, after.ownerId],
     subjectFor(after, cancelled ? 'reservation cancelled' : 'reservation changed'),
-    body(after, [`${after.confirmationId} was changed:`, ...changes.map((c) => `  • ${c}`)])
+    body(after, [`${after.confirmationId} was changed:`, ...changes.map((c) => `  • ${c}`)], origin)
   );
 }
 
-function reservationDeleted(reservation) {
+function reservationDeleted(reservation, { origin = '' } = {}) {
   queue(
     [reservation.ownerId],
     subjectFor(reservation, 'reservation deleted'),
-    body(reservation, [`${reservation.confirmationId} was deleted from the schedule.`])
+    body(reservation, [`${reservation.confirmationId} was deleted from the schedule.`], origin)
   );
 }
 
-function timeTakenBack(cancelled, block) {
+function timeTakenBack(cancelled, block, { origin = '' } = {}) {
   queue(
     [cancelled.ownerId],
     subjectFor(cancelled, 'time taken back'),
-    body(cancelled, [
-      `${cancelled.renterName || 'A renter'} was cancelled and the time is now blocked off.`,
-      'They have been emailed, but somebody should call them as well.',
-    ])
+    body(
+      cancelled,
+      [
+        `${cancelled.renterName || 'A renter'} was cancelled and the time is now blocked off.`,
+        'They have been emailed, but somebody should call them as well.',
+      ],
+      origin
+    )
   );
 }
 
-function hobbsLogged(reservation) {
-  queue([reservation.ownerId], subjectFor(reservation, `Hobbs time ${reservation.hobbsTime}`), body(reservation));
+function hobbsLogged(reservation, { origin = '' } = {}) {
+  queue(
+    [reservation.ownerId],
+    subjectFor(reservation, `Hobbs time ${reservation.hobbsTime}`),
+    body(
+      reservation,
+      [`${reservation.renterName || 'A renter'} logged a Hobbs time of ${reservation.hobbsTime}.`],
+      origin
+    )
+  );
 }
 
 /* ---------- the renter's own emails ---------- */
@@ -317,88 +348,75 @@ function canEmailRenter(reservation) {
   );
 }
 
-function renterFooter(reservation, origin) {
-  const lines = ['', `Any questions: contact ${contactLine(reservation)}.`];
-  if (origin) {
-    lines.push(`Look your reservation up any time: ${origin}/lookup?id=${reservation.confirmationId}`);
-  }
-  lines.push('', 'This message was sent by the booking site. You cannot reply to it.');
-  return lines;
+/* The signature every renter email ends with. The contact line is not repeated
+   here — the instructions above already carry the names and numbers. */
+function renterFooter() {
+  return ['', `— ${getSetting('site_title', 'Planes for Rent')}`, 'Sent by the booking site; you cannot reply to this message.'];
 }
 
-function queueRenter(reservation, subject, lines, origin) {
+function queueRenter(reservation, subject, lines) {
   if (!canEmailRenter(reservation)) return;
-  const text = [...lines, ...renterFooter(reservation, origin)].join('\n');
+  const text = [...lines, ...renterFooter()].join('\n');
   sendTo([reservation.renterEmail], subject, text).catch((err) =>
     console.error('[planesforfriends] renter email failed:', err.message)
   );
 }
 
+const lookupLink = (reservation, origin) =>
+  origin ? `${origin}/lookup?id=${reservation.confirmationId}` : '';
+
 function renterConfirmation(reservation, { origin = '' } = {}) {
-  const site = getSetting('site_title', 'Planes for Rent');
-  queueRenter(
-    reservation,
-    `Your booking is confirmed — ${reservation.planeTail}, ${shortDay(reservation.start)}`,
-    [
-      `${reservation.renterName || 'Hello'} — your plane is booked.`,
-      '',
-      `Confirmation number: ${reservation.confirmationId}`,
-      '',
-      `Plane: ${planeLabel(reservation)}`,
-      `When:  ${formatWhen(reservation)}`,
-      '',
-      'Before you fly:',
-      ...instructionsFor(reservation).map((line, i) => `  ${i + 1}. ${line}`),
-      '',
-      'After you fly, come back to the site with your confirmation number and',
-      'enter the Hobbs reading.',
-      '',
-      `— ${site}`,
-    ],
-    origin
-  );
+  const link = lookupLink(reservation, origin);
+  queueRenter(reservation, `Your booking is confirmed — ${reservation.planeTail}, ${shortDay(reservation.start)}`, [
+    `Your plane is booked${reservation.renterName ? `, ${reservation.renterName.split(' ')[0]}` : ''}.`,
+    '',
+    `Plane: ${planeLabel(reservation)}`,
+    `When: ${formatWhen(reservation)}`,
+    `Confirmation: ${reservation.confirmationId}`,
+    '',
+    'Before you fly:',
+    ...instructionsFor(reservation).map((line, i) => `  ${i + 1}. ${line}`),
+    '',
+    'After you fly:',
+    '  1. Enter the Hobbs reading.',
+    '  2. Pay by the end of the day.',
+    ...(link ? ['', `Your reservation page: ${link}`] : []),
+  ]);
 }
 
 function renterChangedNotice(before, after, { origin = '' } = {}) {
-  const what = [];
-  if (before.planeId !== after.planeId) what.push(`Plane is now ${planeLabel(after)}`);
-  if (before.start !== after.start || before.end !== after.end) what.push(`Time is now ${formatWhen(after)}`);
-  if (!what.length) return;
-  queueRenter(
-    after,
-    `Your booking changed — ${after.planeTail}, ${shortDay(after.start)}`,
-    [
-      `${after.renterName || 'Hello'} — your reservation ${after.confirmationId} has been changed.`,
-      '',
-      ...what.map((line) => `  • ${line}`),
-      '',
-      `Plane: ${planeLabel(after)}`,
-      `When:  ${formatWhen(after)}`,
-      '',
-      'If that does not work for you, please get in touch.',
-    ],
-    origin
-  );
+  const movedPlane = before.planeId !== after.planeId;
+  const movedTime = before.start !== after.start || before.end !== after.end;
+  if (!movedPlane && !movedTime) return;
+  const what =
+    movedPlane && movedTime ? 'a different plane and time' : movedPlane ? 'a different plane' : 'a different time';
+  const link = lookupLink(after, origin);
+  queueRenter(after, `Your booking changed — ${after.planeTail}, ${shortDay(after.start)}`, [
+    `Your booking has moved to ${what}.`,
+    '',
+    `Plane: ${planeLabel(after)}`,
+    `When: ${formatWhen(after)}`,
+    `Confirmation: ${after.confirmationId}`,
+    '',
+    `If that does not work for you, contact ${contactLine(after)}.`,
+    ...(link ? ['', `Your reservation page: ${link}`] : []),
+  ]);
 }
 
 function renterCancelledNotice(reservation, { origin = '', takenBack = false } = {}) {
-  queueRenter(
-    reservation,
-    `Your booking was cancelled — ${reservation.planeTail}, ${shortDay(reservation.start)}`,
-    [
-      `${reservation.renterName || 'Hello'} — your reservation ${reservation.confirmationId} has been cancelled.`,
-      '',
-      `Plane: ${planeLabel(reservation)}`,
-      `Was:   ${formatWhen(reservation)}`,
-      '',
-      takenBack
-        ? 'The owner needs the plane during that time. Somebody should be calling you as well.'
-        : 'The booking is no longer on the schedule.',
-      '',
-      'You are welcome to book another time on the site whenever you like.',
-    ],
-    origin
-  );
+  queueRenter(reservation, `Your booking was cancelled — ${reservation.planeTail}, ${shortDay(reservation.start)}`, [
+    'Your booking has been cancelled.',
+    '',
+    `Plane: ${planeLabel(reservation)}`,
+    `Was: ${formatWhen(reservation)}`,
+    `Confirmation: ${reservation.confirmationId}`,
+    '',
+    takenBack
+      ? `The owner needs the plane during that time. Please contact ${contactLine(reservation)}.`
+      : `If you have any questions, contact ${contactLine(reservation)}.`,
+    '',
+    'You can book another time on the site whenever you like.',
+  ]);
 }
 
 async function sendTest(owner, origin) {
