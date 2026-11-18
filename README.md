@@ -165,10 +165,16 @@ Sign in at `/admin` with the shared password.
     [Notifications](#notifications).
 - **Settings** — site title, the "problems" contact name and number (used only for owners who do
   their own renting — a managed owner's renters are pointed at the manager), the export time zone,
-  the hours the calendar shows (5am–midnight by default), how far ahead renters can book, and the
-  admin password.
+  the hours the calendar shows (5am–midnight by default), how far ahead renters can book, who
+  notification emails come from and whether renters get their own, and the admin password.
 
 ## Notifications
+
+Two separate things come out of `src/notify.js`: what the owners' people get, and what the
+renter gets. Both go through the same mail setup, and both are skipped entirely when that setup
+is missing.
+
+### The owners' people
 
 Each owner has a list of people to email — nobody by default. When anything happens to one of
 that owner's planes, everyone on their list gets a message: a new booking, a change, a
@@ -177,7 +183,26 @@ words ("Hobbs time set to 3.2", "Marked paid", "Amount recorded: $240.00") and c
 renter's name and phone number, so a list should only hold people you would hand that to.
 
 Set the list in Admin → Owners → Edit, one address per line, with a **Send a test email** button
-beside it. Nothing is ever sent to renters.
+beside it.
+
+### The renter
+
+The person who booked gets three emails, and only about their own reservation:
+
+- **A confirmation when they book** — the confirmation number, the plane, the time, the five
+  pre-flight instructions and a direct link to look it up later. Until this existed, closing the
+  page lost the confirmation number.
+- **A note when it moves** — a different plane or a different time, and nothing else. Hobbs
+  readings, payments and owner notes are the owners' own bookkeeping, so a renter is never
+  emailed about those.
+- **A note if it is cancelled**, including when an owner takes the time back, with the number to
+  call.
+
+Renter emails are built only from renter-safe fields — the same rule the renter API shape
+follows — and can be switched off with one checkbox in Admin → Settings. The booking page
+promises "a copy is on its way to…" only when an email will really be sent.
+
+### Setting it up
 
 Sending goes through a mail provider's HTTPS API, so there is still no dependency to install:
 
@@ -206,8 +231,8 @@ outage is a line in the log rather than a broken booking.
 - **Payment is tracked, not processed.** Money changes hands however the owners already do it;
   the site just records who has paid and how much. Amounts are plain dollars — no tax, fees or
   rates are calculated anywhere.
-- **Renters are never notified.** Nothing is texted or emailed to a renter; the confirmation is
-  shown on screen. Owners can have their own people emailed — see below.
+- **Renters are emailed about their own reservation only** — a confirmation, a change, a
+  cancellation — and never texted. Switch it off in Settings if you would rather not.
 - **Times display in each browser's local time zone.** The time zone in Settings is used for the
   CSV export only. If everyone is in the same time zone (the normal case), the two agree.
 - **One shared admin password**, hashed with scrypt, session cookie good for 12 hours. Fine for
@@ -224,6 +249,7 @@ src/db.js            SQLite schema, settings, password hashing
 src/store.js         owners / planes / reservations, conflict checks
 src/api.js           JSON API, instructions, CSV export
 src/notify.js        notification emails: who gets them, what they say, how they are sent
+src/instructions.js  the "Before you fly" list, shared by the pages and the emails
 src/auth.js          admin sessions
 public/              index.html, rent.html, lookup.html, admin.html + css/js
 public/docs/         rental policy PDFs linked from the home page

@@ -1128,6 +1128,7 @@
     $('#set-ahead').value = s.maxDaysAhead;
     $('#set-notify-name').value = s.notifyFromName || '';
     $('#set-notify-email').value = s.notifyFromEmail || '';
+    $('#set-notify-renters').checked = s.notifyRenters !== false;
     renderMailStatus();
   }
 
@@ -1172,6 +1173,7 @@
           max_days_ahead: String(Number($('#set-ahead').value) || 180),
           notify_from_name: $('#set-notify-name').value.trim() || 'Planes for Rent',
           notify_from_email: $('#set-notify-email').value.trim(),
+          notify_renters: $('#set-notify-renters').checked ? 'on' : 'off',
         },
       });
       showMessage($('#settings-msg'), 'Saved.', 'ok');

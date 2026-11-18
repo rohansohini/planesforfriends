@@ -5,29 +5,8 @@ const store = require('./store');
 const { HttpError } = store;
 const auth = require('./auth');
 const notify = require('./notify');
+const { instructionsFor } = require('./instructions');
 const { tidyPhone, tidyEmail } = require('../public/js/format.js');
-
-/* ---------- rental instructions ---------- */
-
-function instructionsFor(reservation) {
-  // Whoever handles this owner's rentals — the manager if there is one.
-  const ownerName = reservation.contactName || reservation.ownerName || 'the owner';
-  const ownerPhone = reservation.contactPhone || reservation.ownerPhone || 'the number on file';
-  // Problems go to the same person when this plane is managed for its owner:
-  // Soney fielding calls for Vinod's plane is who a renter should ring either
-  // way. Only an owner who handles their own renting falls back to the
-  // site-wide contact in Settings.
-  const managed = !!reservation.managerName;
-  const opsName = managed ? reservation.managerName : getSetting('ops_contact_name', 'Soney');
-  const opsPhone = managed ? reservation.managerPhone : getSetting('ops_contact_phone', '');
-  return [
-    `Contact ${ownerName} at ${ownerPhone} about renting.`,
-    'Treat the plane as if it was your own.',
-    'Top off the gas once you are finished — fill the fuel tanks all the way back to full before you leave.',
-    'Payment is due once you land, by the end of the day you fly.',
-    `Contact ${opsName} at ${opsPhone} if there are any problems.`,
-  ];
-}
 
 /* ---------- date helpers for CSV ---------- */
 
@@ -159,6 +138,10 @@ function publicSettings() {
     maxDaysAhead: Number(s.max_days_ahead),
     notifyFromName: s.notify_from_name,
     notifyFromEmail: s.notify_from_email,
+    notifyRenters: s.notify_renters !== 'off',
+    // Whether a renter will actually get an email: the setting on, and the mail
+    // provider set up. The booking page says so only when it is true.
+    renterEmails: s.notify_renters !== 'off' && notify.mailStatus().ready,
   };
 }
 
@@ -234,6 +217,7 @@ async function handleApi(req, res, ctx) {
       kind: 'rental',
     });
     notify.reservationCreated(reservation, { origin });
+    notify.renterConfirmation(reservation, { origin });
     return send(201, renterView(reservation));
   }
 
@@ -317,9 +301,11 @@ async function handleApi(req, res, ctx) {
     if (body.hobbsTime !== undefined && body.hobbsTime !== null && body.hobbsTime !== '') {
       const withHobbs = store.updateReservation(reservation.id, { hobbsTime: body.hobbsTime });
       notify.reservationCreated(withHobbs, { origin, byAdmin: true });
+      notify.renterConfirmation(withHobbs, { origin });
       return send(201, withHobbs);
     }
     notify.reservationCreated(reservation, { origin, byAdmin: true });
+    notify.renterConfirmation(reservation, { origin });
     return send(201, reservation);
   }
 
@@ -327,6 +313,7 @@ async function handleApi(req, res, ctx) {
   if (takeBackMatch && method === 'POST') {
     const result = store.takeBackTime(Number(takeBackMatch[1]), { notes: body.notes });
     notify.timeTakenBack(result.cancelled, result.block, { origin });
+    notify.renterCancelledNotice(result.cancelled, { origin, takenBack: true });
     return send(200, result);
   }
 
@@ -334,13 +321,26 @@ async function handleApi(req, res, ctx) {
   if (adminResMatch && method === 'PATCH') {
     const before = store.getReservation(Number(adminResMatch[1]));
     const after = store.updateReservation(Number(adminResMatch[1]), body);
-    if (before) notify.reservationChanged(before, after, { origin });
+    if (before) {
+      notify.reservationChanged(before, after, { origin });
+      // The renter hears only about the things that affect them: a cancelled
+      // booking, or one that moved. Hobbs readings and payments are the
+      // owners' own bookkeeping.
+      if (before.status === 'confirmed' && after.status === 'cancelled') {
+        notify.renterCancelledNotice(after, { origin });
+      } else if (after.status === 'confirmed') {
+        notify.renterChangedNotice(before, after, { origin });
+      }
+    }
     return send(200, after);
   }
   if (adminResMatch && method === 'DELETE') {
     const before = store.getReservation(Number(adminResMatch[1]));
     const result = store.deleteReservation(Number(adminResMatch[1]));
-    if (before) notify.reservationDeleted(before, { origin });
+    if (before) {
+      notify.reservationDeleted(before, { origin });
+      if (before.status === 'confirmed') notify.renterCancelledNotice(before, { origin });
+    }
     return send(200, result);
   }
 

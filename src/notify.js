@@ -16,6 +16,7 @@
 
 const { getSetting } = require('./db');
 const store = require('./store');
+const { instructionsFor, contactLine } = require('./instructions');
 
 const SEND_TIMEOUT_MS = 10000;
 
@@ -152,6 +153,16 @@ function formatWhen(reservation) {
 }
 
 const money = (v) => (v == null ? '—' : `$${Number(v).toFixed(2)}`);
+
+/** "Sat, Nov 21" — enough to recognise the booking in a subject line. */
+function shortDay(ts) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: getSetting('timezone', 'America/Chicago'),
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(ts));
+}
 
 function planeLabel(r) {
   return [r.planeTail, r.planeModel].filter(Boolean).join(' · ');
@@ -292,8 +303,112 @@ function hobbsLogged(reservation, { origin = '' } = {}) {
   );
 }
 
-async function sendTest(owner, origin) {
-  if (!owner.notifyEmails.length) {
+/* ---------- the renter's own emails ---------- */
+
+/**
+ * Everything here is built from renter-safe fields only. What the owners keep
+ * to themselves — owner notes, whether a booking is paid, how much — never
+ * appears, the same rule the renter API shape follows.
+ */
+function renterMailOn() {
+  return getSetting('notify_renters', 'on') !== 'off';
+}
+
+function canEmailRenter(reservation) {
+  return (
+    renterMailOn() &&
+    reservation &&
+    reservation.kind === 'rental' &&
+    !!reservation.renterEmail &&
+    mailConfig().ready
+  );
+}
+
+function renterFooter(reservation, origin) {
+  const lines = ['', `Any questions: contact ${contactLine(reservation)}.`];
+  if (origin) {
+    lines.push(`Look your reservation up any time: ${origin}/lookup?id=${reservation.confirmationId}`);
+  }
+  lines.push('', 'This message was sent by the booking site. You cannot reply to it.');
+  return lines;
+}
+
+function queueRenter(reservation, subject, lines, origin) {
+  if (!canEmailRenter(reservation)) return;
+  const text = [...lines, ...renterFooter(reservation, origin)].join('\n');
+  sendTo([reservation.renterEmail], subject, text).catch((err) =>
+    console.error('[planesforfriends] renter email failed:', err.message)
+  );
+}
+
+function renterConfirmation(reservation, { origin = '' } = {}) {
+  const site = getSetting('site_title', 'Planes for Rent');
+  queueRenter(
+    reservation,
+    `Your booking is confirmed — ${reservation.planeTail}, ${shortDay(reservation.start)}`,
+    [
+      `${reservation.renterName || 'Hello'} — your plane is booked.`,
+      '',
+      `Confirmation number: ${reservation.confirmationId}`,
+      '',
+      `Plane: ${planeLabel(reservation)}`,
+      `When:  ${formatWhen(reservation)}`,
+      '',
+      'Before you fly:',
+      ...instructionsFor(reservation).map((line, i) => `  ${i + 1}. ${line}`),
+      '',
+      'After you fly, come back to the site with your confirmation number and',
+      'enter the Hobbs reading.',
+      '',
+      `— ${site}`,
+    ],
+    origin
+  );
+}
+
+function renterChangedNotice(before, after, { origin = '' } = {}) {
+  const what = [];
+  if (before.planeId !== after.planeId) what.push(`Plane is now ${planeLabel(after)}`);
+  if (before.start !== after.start || before.end !== after.end) what.push(`Time is now ${formatWhen(after)}`);
+  if (!what.length) return;
+  queueRenter(
+    after,
+    `Your booking changed — ${after.planeTail}, ${shortDay(after.start)}`,
+    [
+      `${after.renterName || 'Hello'} — your reservation ${after.confirmationId} has been changed.`,
+      '',
+      ...what.map((line) => `  • ${line}`),
+      '',
+      `Plane: ${planeLabel(after)}`,
+      `When:  ${formatWhen(after)}`,
+      '',
+      'If that does not work for you, please get in touch.',
+    ],
+    origin
+  );
+}
+
+function renterCancelledNotice(reservation, { origin = '', takenBack = false } = {}) {
+  queueRenter(
+    reservation,
+    `Your booking was cancelled — ${reservation.planeTail}, ${shortDay(reservation.start)}`,
+    [
+      `${reservation.renterName || 'Hello'} — your reservation ${reservation.confirmationId} has been cancelled.`,
+      '',
+      `Plane: ${planeLabel(reservation)}`,
+      `Was:   ${formatWhen(reservation)}`,
+      '',
+      takenBack
+        ? 'The owner needs the plane during that time. Somebody should be calling you as well.'
+        : 'The booking is no longer on the schedule.',
+      '',
+      'You are welcome to book another time on the site whenever you like.',
+    ],
+    origin
+  );
+}
+
+async function sendTest(owner, origin) {  if (!owner.notifyEmails.length) {
     return { sent: 0, skipped: 0, error: `Nobody is on ${owner.name}'s notify list yet.` };
   }
   return sendTo(
@@ -320,4 +435,7 @@ module.exports = {
   reservationDeleted,
   timeTakenBack,
   hobbsLogged,
+  renterConfirmation,
+  renterChangedNotice,
+  renterCancelledNotice,
 };

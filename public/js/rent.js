@@ -244,6 +244,15 @@
 
     $('#conf-lookup-link').href = `/lookup?id=${encodeURIComponent(reservation.confirmationId)}`;
 
+    // Only promise an email when one is really going out.
+    const emailed = $('#conf-emailed');
+    if (state.config && state.config.renterEmails && reservation.renterEmail) {
+      emailed.className = 'center msg-ok-text';
+      emailed.textContent = `A copy is on its way to ${reservation.renterEmail}.`;
+    } else {
+      emailed.textContent = '';
+    }
+
     $('#booking').classList.add('hidden');
     $('#confirmation').classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });

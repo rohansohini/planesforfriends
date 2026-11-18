@@ -137,6 +137,9 @@ const DEFAULT_SETTINGS = {
   // provider has verified, or it will refuse to send.
   notify_from_name: 'Planes for Rent',
   notify_from_email: '',
+  // Renters get their own confirmation, change and cancellation emails. 'off'
+  // stops those without touching the owners' notify lists.
+  notify_renters: 'on',
 };
 
 function getSetting(key, fallback = null) {
